@@ -13,7 +13,7 @@ type RecipientEntry struct {
 	WrappedDEK      string `json:"wrapped_dek"`
 }
 
-// VaultEnvelope represents the top-level .env.lock JSON schema.
+// VaultEnvelope represents the top-level env.lock JSON schema.
 type VaultEnvelope struct {
 	Version    int              `json:"version"`
 	Cipher     string           `json:"cipher"`
@@ -21,4 +21,3 @@ type VaultEnvelope struct {
 	Ciphertext string           `json:"ciphertext"`
 	Recipients []RecipientEntry `json:"recipients"`
 }
-

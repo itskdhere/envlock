@@ -2,7 +2,7 @@
 
 Zero-cloud, tamper-evident asymmetric envelope encryption for environment secrets.
 
-Keep your `.env` files local and uncommitted while securely checking encrypted snapshots (`.env.lock`) directly into Git.
+Keep your `.env` files local and uncommitted while securely checking encrypted snapshots (`env.lock`) directly into Git.
 
 ## 🚀 Key Features
 
@@ -52,16 +52,16 @@ envlock keygen
 
 Creates `envlock.key` (mode 0600, owner-only) and `envlock.pub`.
 
-### 3. Encrypt local `.env` into `.env.lock`
+### 3. Encrypt local `.env` into `env.lock`
 
 ```bash
 envlock push
 # or: el push
 ```
 
-Encrypts your plaintext `.env` into a tamper-evident `.env.lock` file. You can safely commit `.env.lock` to Git.
+Encrypts your plaintext `.env` into a tamper-evident `env.lock` file. You can safely commit `env.lock` to Git.
 
-### 4. Decrypt `.env.lock` into local `.env`
+### 4. Decrypt `env.lock` into local `.env`
 
 ```bash
 envlock pull
@@ -75,10 +75,10 @@ Restores the exact `.env` file byte-for-byte. If local unpushed changes exist, E
 Work seamlessly with multiple environments using the `-e` / `--env` flag:
 
 ```bash
-# Encrypt .env.staging -> .env.staging.lock
+# Encrypt .env.staging -> env.staging.lock
 el push -e staging
 
-# Decrypt .env.staging.lock -> .env.staging
+# Decrypt env.staging.lock -> .env.staging
 el pull -e staging
 
 # Production
@@ -92,8 +92,8 @@ el pull -e prod
 | :---------------- | :--------------- | :---------------------------------------------------------------------------------------- |
 | `envlock init`    | `el init`        | Prepares project safety defaults (`.gitignore`, `.gitattributes`, sample `.env`)          |
 | `envlock keygen`  | `el keygen`      | Generates a Curve25519 X25519 keypair (`--global`, `--out`, `--stdout`, `-y` / `--force`) |
-| `envlock push`    | `el push`, `enc` | Encrypts raw `.env` bytes into `.env.lock` for all authorized recipients                  |
-| `envlock pull`    | `el pull`, `dec` | Decrypts `.env.lock` with uncommitted changes warning/prompt (`-y` / `--force`)           |
+| `envlock push`    | `el push`, `enc` | Encrypts raw `.env` bytes into `env.lock` for all authorized recipients                   |
+| `envlock pull`    | `el pull`, `dec` | Decrypts `env.lock` with uncommitted changes warning/prompt (`-y` / `--force`)            |
 | `envlock version` | `el version`     | Prints semantic version, commit hash, and target architecture                             |
 
 ## 🔒 Security & Verification

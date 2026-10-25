@@ -71,4 +71,3 @@ func DecryptPayload(ciphertext []byte, iv []byte, dek []byte) ([]byte, error) {
 
 	return plaintext, nil
 }
-

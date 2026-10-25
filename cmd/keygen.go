@@ -104,4 +104,3 @@ func init() {
 
 	rootCmd.AddCommand(keygenCmd)
 }
-

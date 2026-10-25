@@ -8,7 +8,7 @@ import (
 
 func TestVaultReadWrite(t *testing.T) {
 	tempDir := t.TempDir()
-	vaultPath := filepath.Join(tempDir, ".env.lock")
+	vaultPath := filepath.Join(tempDir, "env.lock")
 
 	envelope := &VaultEnvelope{
 		Version:    VaultVersion,
@@ -71,4 +71,3 @@ func TestVaultReadWrite(t *testing.T) {
 		t.Errorf("expected error reading corrupt vault")
 	}
 }
-

@@ -13,4 +13,3 @@ func WipeBytes(b []byte) {
 	}
 	runtime.KeepAlive(b)
 }
-

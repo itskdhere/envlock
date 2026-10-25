@@ -87,4 +87,3 @@ func Banner(title string, lines []string) string {
 	content := append([]string{header, ""}, lines...)
 	return BannerStyle.Render(strings.Join(content, "\n"))
 }
-

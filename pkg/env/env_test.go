@@ -81,7 +81,7 @@ func TestEnsureGitattributes(t *testing.T) {
 	// Verify content
 	content, _ := os.ReadFile(filepath.Join(tempDir, ".gitattributes"))
 	str := string(content)
-	if !strings.Contains(str, ".env.lock merge=binary") || !strings.Contains(str, ".env.*.lock merge=binary") {
+	if !strings.Contains(str, "env.lock merge=binary") || !strings.Contains(str, "env.*.lock merge=binary") {
 		t.Errorf("gitattributes missing binary merge rules: %s", str)
 	}
 }
@@ -91,13 +91,13 @@ func TestResolvePaths(t *testing.T) {
 
 	// Default
 	p1 := ResolvePaths(base, "", "")
-	if p1.EnvFile != filepath.Join(base, ".env") || p1.LockFile != filepath.Join(base, ".env.lock") {
+	if p1.EnvFile != filepath.Join(base, ".env") || p1.LockFile != filepath.Join(base, "env.lock") {
 		t.Errorf("default paths mismatch: %+v", p1)
 	}
 
 	// Named env
 	p2 := ResolvePaths(base, "production", "")
-	if p2.EnvFile != filepath.Join(base, ".env.production") || p2.LockFile != filepath.Join(base, ".env.production.lock") {
+	if p2.EnvFile != filepath.Join(base, ".env.production") || p2.LockFile != filepath.Join(base, "env.production.lock") {
 		t.Errorf("named env mismatch: %+v", p2)
 	}
 
@@ -109,7 +109,7 @@ func TestResolvePaths(t *testing.T) {
 
 	// Explicit .env file
 	p4 := ResolvePaths(base, "", ".env")
-	if p4.EnvFile != filepath.Join(base, ".env") || p4.LockFile != filepath.Join(base, ".env.lock") {
+	if p4.EnvFile != filepath.Join(base, ".env") || p4.LockFile != filepath.Join(base, "env.lock") {
 		t.Errorf("explicit .env mismatch: %+v", p4)
 	}
 }
@@ -135,4 +135,3 @@ func TestCreateDefaultEnv(t *testing.T) {
 		t.Errorf("expected created2 to be false")
 	}
 }
-

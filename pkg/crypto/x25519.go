@@ -39,4 +39,3 @@ func DeriveKEK(sharedSecret []byte, recipientPubBytes []byte) ([]byte, error) {
 	}
 	return kek, nil
 }
-

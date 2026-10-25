@@ -15,10 +15,10 @@ import (
 var pushCmd = &cobra.Command{
 	Use:     "push",
 	Aliases: []string{"enc", "encrypt"},
-	Short:   "Encrypt local .env into tamper-evident .env.lock",
-	Long: `Encrypts raw .env bytes into .env.lock using Curve25519 asymmetric envelope encryption.
+	Short:   "Encrypt local .env into tamper-evident env.lock",
+	Long: `Encrypts raw .env bytes into env.lock using Curve25519 asymmetric envelope encryption.
 Preserves 100% of formatting, comments, blank lines, and custom quotes.
-Automatically encrypts for all authorized recipients defined in existing .env.lock,
+Automatically encrypts for all authorized recipients defined in existing env.lock,
 or auto-discovers your local/global public key on the initial push.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cwd, err := os.Getwd()
@@ -112,4 +112,3 @@ or auto-discovers your local/global public key on the initial push.`,
 func init() {
 	rootCmd.AddCommand(pushCmd)
 }
-

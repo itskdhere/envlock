@@ -118,11 +118,11 @@ func EnsureGitignore(baseDir string) ([]string, error) {
 	return added, nil
 }
 
-// EnsureGitattributes ensures that .env.lock and .env.*.lock are marked with merge=binary.
+// EnsureGitattributes ensures that env.lock and env.*.lock are marked with merge=binary.
 // Returns the list of patterns that were newly appended.
 func EnsureGitattributes(baseDir string) ([]string, error) {
 	gitattributesPath := filepath.Join(baseDir, ".gitattributes")
-	required := []string{".env.lock merge=binary", ".env.*.lock merge=binary"}
+	required := []string{"env.lock merge=binary", "env.*.lock merge=binary"}
 
 	var existingLines []string
 	if data, err := os.ReadFile(gitattributesPath); err == nil {
@@ -173,7 +173,7 @@ func EnsureGitattributes(baseDir string) ([]string, error) {
 // SampleTemplate is the template content created if .env does not exist on init.
 const SampleTemplate = `# EnvLock Configuration File
 # This file contains sensitive secrets. Never commit it to Git!
-# Run 'envlock push' to securely encrypt this into .env.lock
+# Run 'envlock push' to securely encrypt this into env.lock
 
 APP_ENV=development
 PORT=8080

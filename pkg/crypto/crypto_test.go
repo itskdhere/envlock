@@ -222,4 +222,3 @@ func TestWipeBytes(t *testing.T) {
 		}
 	}
 }
-

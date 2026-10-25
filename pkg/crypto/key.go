@@ -73,4 +73,3 @@ func ParsePrivateKey(s string) (*ecdh.PrivateKey, error) {
 
 	return ecdh.X25519().NewPrivateKey(raw)
 }
-

@@ -15,7 +15,7 @@ var (
 	ErrNoRecipients       = errors.New("vault contains no recipients")
 )
 
-// ReadVault reads and parses a .env.lock file from the specified path.
+// ReadVault reads and parses an env.lock file from the specified path.
 func ReadVault(filePath string) (*VaultEnvelope, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
@@ -97,4 +97,3 @@ func WriteVault(filePath string, vault *VaultEnvelope) error {
 
 	return nil
 }
-

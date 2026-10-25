@@ -110,4 +110,3 @@ func ResolveDefaultPublicKey() (string, error) {
 
 	return "", errors.New("no public key found. Run 'envlock keygen' to generate your keypair")
 }
-

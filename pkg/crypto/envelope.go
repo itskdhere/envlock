@@ -13,7 +13,7 @@ import (
 
 const (
 	WrappedDEKByteLength = GCMIVLength + DEKLength + 16 // 12 + 32 + 16 = 60 bytes
-	WrappedDEKHexLength  = WrappedDEKByteLength * 2      // 120 hex characters
+	WrappedDEKHexLength  = WrappedDEKByteLength * 2     // 120 hex characters
 )
 
 var (
@@ -132,4 +132,3 @@ func UnwrapDEK(wrappedDEKHex string, ephemeralPub *ecdh.PublicKey, recipientPriv
 
 	return dek, nil
 }
-

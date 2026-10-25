@@ -43,7 +43,7 @@ JSON_PAYLOAD={"key": "value", "active": true}
 `)
 
 	envPath := filepath.Join(tempDir, ".env")
-	lockPath := filepath.Join(tempDir, ".env.lock")
+	lockPath := filepath.Join(tempDir, "env.lock")
 
 	if err := env.WriteEnvFile(envPath, originalEnv); err != nil {
 		t.Fatalf("failed to write initial .env: %v", err)
@@ -73,7 +73,7 @@ JSON_PAYLOAD={"key": "value", "active": true}
 		t.Fatalf("push failed: %v", err)
 	}
 
-	// Verify .env.lock exists and validates against schema
+	// Verify env.lock exists and validates against schema
 	envelope, err := vault.ReadVault(lockPath)
 	if err != nil {
 		t.Fatalf("failed to read generated vault: %v", err)
@@ -118,7 +118,7 @@ func TestMultiEnvironmentWorkflow(t *testing.T) {
 	// Create .env.staging
 	stagingEnv := []byte("ENVIRONMENT=staging\nDEBUG=true\n")
 	stagingFile := filepath.Join(tempDir, ".env.staging")
-	stagingLock := filepath.Join(tempDir, ".env.staging.lock")
+	stagingLock := filepath.Join(tempDir, "env.staging.lock")
 	_ = env.WriteEnvFile(stagingFile, stagingEnv)
 
 	// Push staging
@@ -215,5 +215,3 @@ func TestCommandFlagMerging(t *testing.T) {
 		}
 	}
 }
-
-

@@ -23,8 +23,8 @@ var (
 var pullCmd = &cobra.Command{
 	Use:     "pull",
 	Aliases: []string{"dec", "decrypt"},
-	Short:   "Decrypt .env.lock into local .env with byte-for-byte fidelity",
-	Long: `Decrypts .env.lock using your private key and writes the plaintext .env file.
+	Short:   "Decrypt env.lock into local .env with byte-for-byte fidelity",
+	Long: `Decrypts env.lock using your private key and writes the plaintext .env file.
 Includes overwrite protection: if local .env has uncommitted changes, you will be prompted
 before overwriting unless --force / -y is supplied.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -129,4 +129,3 @@ func init() {
 	pullCmd.Flags().BoolVarP(&flagPullForce, "force", "y", false, "Force overwrite local .env without confirmation prompt")
 	rootCmd.AddCommand(pullCmd)
 }
-
