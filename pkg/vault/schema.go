@@ -1,0 +1,24 @@
+package vault
+
+// VaultVersion represents the current vault envelope schema version.
+const VaultVersion = 1
+
+// CipherAES256GCM is the cipher algorithm used for payload encryption.
+const CipherAES256GCM = "AES-256-GCM"
+
+// RecipientEntry stores the wrapped DEK for a specific recipient public key.
+type RecipientEntry struct {
+	PubKey          string `json:"pubkey"`
+	EphemeralPubKey string `json:"ephemeral_pubkey"`
+	WrappedDEK      string `json:"wrapped_dek"`
+}
+
+// VaultEnvelope represents the top-level .env.lock JSON schema.
+type VaultEnvelope struct {
+	Version    int              `json:"version"`
+	Cipher     string           `json:"cipher"`
+	IV         string           `json:"iv"`
+	Ciphertext string           `json:"ciphertext"`
+	Recipients []RecipientEntry `json:"recipients"`
+}
+
