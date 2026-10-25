@@ -70,7 +70,7 @@ release: clean
 	rm -rf $(DIST_DIR)/tmp_windows_amd64
 
 	# Generate SHA-256 Checksums
-	(cd $(DIST_DIR) && sha256sum * > checksums.txt 2>/dev/null || shasum -a 256 * > checksums.txt)
+	(cd $(DIST_DIR) && rm -f checksums.txt && (sha256sum $(BINARY_NAME)* 2>/dev/null || shasum -a 256 $(BINARY_NAME)*) > checksums.txt)
 
 clean:
 	@rm -rf $(BUILD_DIR) $(DIST_DIR) 2>/dev/null || true
