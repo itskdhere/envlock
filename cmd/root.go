@@ -19,7 +19,6 @@ var rootCmd = &cobra.Command{
 	Short: "Zero-cloud, asymmetric envelope encryption for environment secrets",
 	Long: `EnvLock (el) keeps your .env files local and uncommitted while securely storing 
 tamper-evident, encrypted snapshots (env.lock) directly in your Git repository.
-
 Protected by Curve25519 (X25519 ECDH) asymmetric envelope encryption and AES-256-GCM.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if flagVersion {

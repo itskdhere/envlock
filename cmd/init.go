@@ -14,7 +14,7 @@ var initCmd = &cobra.Command{
 	Short: "Initialize project safety defaults (.gitignore, .gitattributes, sample .env)",
 	Long: `Prepares the current workspace for EnvLock by:
 1. Creating a sample .env file if none exists.
-2. Appending .env, .env.*.local, and *.key to .gitignore to prevent secret leaks.
+2. Appending .env, .env.*.local, *.key, and *.pub to .gitignore, while exempting lock files (!env.lock, !env.*.lock).
 3. Appending *.lock merge=binary to .gitattributes to prevent Git merge conflict corruption.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cwd, err := os.Getwd()

@@ -6,6 +6,9 @@ dist/
 .env
 .env.*.local
 *.key
+*.pub
+!env.lock
+!env.*.lock
 
 # Miscellaneous
 temp

@@ -1,7 +1,12 @@
 # EnvLock (`el`)
 
-Zero-cloud, tamper-evident asymmetric envelope encryption for environment secrets.
+[![CI](https://github.com/itskdhere/envlock/actions/workflows/ci.yml/badge.svg)](https://github.com/itskdhere/envlock/actions/workflows/ci.yml)
+&nbsp;
+[![Release](https://github.com/itskdhere/envlock/actions/workflows/release.yml/badge.svg)](https://github.com/itskdhere/envlock/actions/workflows/release.yml)
+&nbsp;
+[![Version](https://img.shields.io/github/v/release/itskdhere/envlock?logo=semver&label=Version)](https://github.com/itskdhere/envlock/releases/latest)
 
+Zero-cloud, tamper-evident asymmetric envelope encryption for environment secrets.   
 Keep your `.env` files local and uncommitted while securely checking encrypted snapshots (`env.lock`) directly into Git.
 
 ## 🚀 Key Features
@@ -41,7 +46,7 @@ envlock init
 # or: el init
 ```
 
-Adds safety rules to `.gitignore` and `.gitattributes` to prevent plaintext secrets from ever reaching Git.
+Adds safety rules to `.gitignore` (ignoring `.env`, `*.key`, and `*.pub` while keeping `!env.lock` and `!env.*.lock` tracked) and `.gitattributes` (binary merge protection).
 
 ### 2. Generate your identity keypair
 
@@ -51,6 +56,8 @@ envlock keygen
 ```
 
 Creates `envlock.key` (mode 0600, owner-only) and `envlock.pub`.
+
+> **Tip:** Use `envlock keygen --global` (or `-g`) to store your keypair centrally in your user config directory (`~/.config/envlock/keys/` or `%APPDATA%\envlock\keys\`) across all projects.
 
 ### 3. Encrypt local `.env` into `env.lock`
 

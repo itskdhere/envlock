@@ -36,8 +36,8 @@ func TestEnsureGitignore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("EnsureGitignore failed: %v", err)
 	}
-	if len(added) != 3 {
-		t.Fatalf("expected 3 entries added, got %d", len(added))
+	if len(added) != 6 {
+		t.Fatalf("expected 6 entries added, got %d", len(added))
 	}
 
 	// Second run should be no-op
@@ -52,8 +52,10 @@ func TestEnsureGitignore(t *testing.T) {
 	// Verify content
 	content, _ := os.ReadFile(filepath.Join(tempDir, ".gitignore"))
 	str := string(content)
-	if !strings.Contains(str, ".env") || !strings.Contains(str, ".env.*.local") || !strings.Contains(str, "*.key") {
-		t.Errorf("gitignore missing expected entries: %s", str)
+	for _, expected := range []string{".env", ".env.*.local", "*.key", "*.pub", "!env.lock", "!env.*.lock"} {
+		if !strings.Contains(str, expected) {
+			t.Errorf("gitignore missing expected entry: %s", expected)
+		}
 	}
 }
 
