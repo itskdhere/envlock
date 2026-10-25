@@ -56,10 +56,10 @@ The public key (el_pub_...) can be safely shared with teammates.`,
 		// Overwrite guard
 		if !flagKeygenForce {
 			if _, err := os.Stat(privPath); err == nil {
-				return fmt.Errorf("key file %q already exists. Use --force / -f to overwrite", privPath)
+				return fmt.Errorf("key file %q already exists. Use --force / -y to overwrite", privPath)
 			}
 			if _, err := os.Stat(pubPath); err == nil {
-				return fmt.Errorf("public key file %q already exists. Use --force / -f to overwrite", pubPath)
+				return fmt.Errorf("public key file %q already exists. Use --force / -y to overwrite", pubPath)
 			}
 		}
 
@@ -100,7 +100,7 @@ func init() {
 	keygenCmd.Flags().BoolVarP(&flagKeygenGlobal, "global", "g", false, "Save keys to global user config directory")
 	keygenCmd.Flags().StringVar(&flagKeygenOut, "out", "", "Directory to write key files to")
 	keygenCmd.Flags().BoolVar(&flagKeygenStdout, "stdout", false, "Print keys directly to stdout without writing files")
-	keygenCmd.Flags().BoolVarP(&flagKeygenForce, "force", "f", false, "Overwrite existing key files if present")
+	keygenCmd.Flags().BoolVarP(&flagKeygenForce, "force", "y", false, "Overwrite existing key files if present")
 
 	rootCmd.AddCommand(keygenCmd)
 }

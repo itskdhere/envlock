@@ -88,13 +88,13 @@ el pull -e prod
 
 ## 📖 Command Reference
 
-| Command           | Alias            | Description                                                                      |
-| :---------------- | :--------------- | :------------------------------------------------------------------------------- |
-| `envlock init`    | `el init`        | Prepares project safety defaults (`.gitignore`, `.gitattributes`, sample `.env`) |
-| `envlock keygen`  | `el keygen`      | Generates a Curve25519 X25519 keypair (`--global`, `--out`, `--stdout`)          |
-| `envlock push`    | `el push`, `enc` | Encrypts raw `.env` bytes into `.env.lock` for all authorized recipients         |
-| `envlock pull`    | `el pull`, `dec` | Decrypts `.env.lock` with uncommitted changes warning/prompt (`-y` / `--force`)  |
-| `envlock version` | `el version`     | Prints semantic version, commit hash, and target architecture                    |
+| Command           | Alias            | Description                                                                               |
+| :---------------- | :--------------- | :---------------------------------------------------------------------------------------- |
+| `envlock init`    | `el init`        | Prepares project safety defaults (`.gitignore`, `.gitattributes`, sample `.env`)          |
+| `envlock keygen`  | `el keygen`      | Generates a Curve25519 X25519 keypair (`--global`, `--out`, `--stdout`, `-y` / `--force`) |
+| `envlock push`    | `el push`, `enc` | Encrypts raw `.env` bytes into `.env.lock` for all authorized recipients                  |
+| `envlock pull`    | `el pull`, `dec` | Decrypts `.env.lock` with uncommitted changes warning/prompt (`-y` / `--force`)           |
+| `envlock version` | `el version`     | Prints semantic version, commit hash, and target architecture                             |
 
 ## 🔒 Security & Verification
 

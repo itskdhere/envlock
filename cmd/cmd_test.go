@@ -198,3 +198,22 @@ func TestKeyResolutionWithEnvVar(t *testing.T) {
 	}
 }
 
+func TestCommandFlagMerging(t *testing.T) {
+	commands := [][]string{
+		{"--help"},
+		{"keygen", "--help"},
+		{"pull", "--help"},
+		{"push", "--help"},
+		{"init", "--help"},
+		{"version"},
+	}
+
+	for _, args := range commands {
+		rootCmd.SetArgs(args)
+		if err := rootCmd.Execute(); err != nil {
+			t.Fatalf("rootCmd.Execute(%v) failed: %v", args, err)
+		}
+	}
+}
+
+
