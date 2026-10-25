@@ -1,6 +1,6 @@
 BINARY_NAME ?= envlock
 ALIAS_NAME ?= el
-VERSION ?= $(shell git describe --tags --always 2>/dev/null || echo "0.1.0")
+VERSION ?= $(shell git describe --tags --always 2>/dev/null || echo "0.1.1")
 COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "dev")
 DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "unknown")
 BUILD_DIR ?= bin
