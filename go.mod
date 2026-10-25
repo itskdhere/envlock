@@ -1,6 +1,6 @@
 module github.com/itskdhere/envlock
 
-go 1.27.3
+go 1.27
 
 require (
 	github.com/charmbracelet/lipgloss v1.1.0
