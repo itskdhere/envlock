@@ -41,7 +41,7 @@ if [ -z "$VERSION" ]; then
     VERSION=$(curl -sSL -H "User-Agent: EnvLock-Installer" "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || true)
   fi
   if [ -z "$VERSION" ]; then
-    VERSION="v0.2.0"
+    VERSION="v0.2.1"
   fi
 fi
 
