@@ -1,10 +1,18 @@
 BINARY_NAME ?= envlock
 ALIAS_NAME ?= el
-VERSION ?= $(shell git describe --tags --always 2>/dev/null || echo "0.2.1")
-COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "dev")
-DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "unknown")
+VERSION ?= $(or $(shell git describe --tags --always),0.2.1)
+COMMIT ?= $(or $(shell git rev-parse --short HEAD),dev)
 BUILD_DIR ?= bin
 DIST_DIR ?= dist
+
+# Pin cmd.exe so recipes behave the same whether make is launched from PowerShell or Git Bash.
+ifeq ($(OS),Windows_NT)
+SHELL := cmd.exe
+EXE := .exe
+DATE ?= $(shell powershell -NoProfile -Command "[DateTime]::UtcNow.ToString('s')+'Z'")
+else
+DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+endif
 
 LDFLAGS := -s -w \
 	-X github.com/itskdhere/envlock/cmd.Version=$(VERSION) \
@@ -15,9 +23,10 @@ LDFLAGS := -s -w \
 
 all: build
 
+build: export CGO_ENABLED := 0
 build:
-	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME) main.go
-	@cp $(BUILD_DIR)/$(BINARY_NAME) $(BUILD_DIR)/$(ALIAS_NAME) 2>/dev/null || copy $(BUILD_DIR)\$(BINARY_NAME).exe $(BUILD_DIR)\$(ALIAS_NAME).exe 2>nul || true
+	go build -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME)$(EXE) main.go
+	go build -ldflags "$(LDFLAGS)" -o $(BUILD_DIR)/$(ALIAS_NAME)$(EXE) main.go
 
 test:
 	go test -v ./...
@@ -73,4 +82,8 @@ release: clean
 	(cd $(DIST_DIR) && rm -f checksums.txt && (sha256sum $(BINARY_NAME)* 2>/dev/null || shasum -a 256 $(BINARY_NAME)*) > checksums.txt)
 
 clean:
-	@rm -rf $(BUILD_DIR) $(DIST_DIR) 2>/dev/null || true
+ifeq ($(OS),Windows_NT)
+	@rd /s /q $(BUILD_DIR) $(DIST_DIR) 2>nul || exit 0
+else
+	@rm -rf $(BUILD_DIR) $(DIST_DIR)
+endif
