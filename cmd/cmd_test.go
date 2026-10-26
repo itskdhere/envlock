@@ -197,6 +197,13 @@ func TestKeyResolutionWithEnvVar(t *testing.T) {
 	if resolved != privStr {
 		t.Fatalf("resolved key mismatch: got %s, expected %s", resolved, privStr)
 	}
+
+	filePriv, _, _ := crypto.GenerateKeyPair()
+	keyFile := filepath.Join(t.TempDir(), "flag.key")
+	_ = os.WriteFile(keyFile, []byte(crypto.FormatPrivateKey(filePriv)), 0600)
+	if resolved, _ := ResolvePrivateKey(keyFile); resolved != crypto.FormatPrivateKey(filePriv) {
+		t.Fatal("--key-file must take precedence over ENVLOCK_KEY")
+	}
 }
 
 func TestRunExitCodesAndKeyStripping(t *testing.T) {

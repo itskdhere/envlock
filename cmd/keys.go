@@ -31,22 +31,11 @@ func GlobalKeyPaths() (privPath string, pubPath string, err error) {
 	return filepath.Join(dir, "default.key"), filepath.Join(dir, "default.pub"), nil
 }
 
-// ResolvePrivateKey locates and returns the private key string from supported sources:
-// 1. ENVLOCK_KEY environment variable (raw key string)
-// 2. --key-file flag (path or "-" for stdin)
-// 3. ENVLOCK_KEY_PATH environment variable (path)
-// 4. Local ./envlock.key
-// 5. Global user config dir default.key
+// ResolvePrivateKey returns the private key from the first source that has one:
+// --key-file (path or "-" for stdin), ENVLOCK_KEY, ENVLOCK_KEY_PATH, ./envlock.key, global default.key.
 func ResolvePrivateKey(keyFileFlag string) (string, error) {
-	// 1. ENVLOCK_KEY environment variable
-	if keyEnv := strings.TrimSpace(os.Getenv("ENVLOCK_KEY")); keyEnv != "" {
-		return keyEnv, nil
-	}
-
-	// 2. Explicit key-file flag
 	if keyFileFlag != "" {
 		if keyFileFlag == "-" {
-			// Read from stdin
 			data, err := io.ReadAll(os.Stdin)
 			if err != nil {
 				return "", fmt.Errorf("failed to read private key from stdin: %w", err)
@@ -60,7 +49,10 @@ func ResolvePrivateKey(keyFileFlag string) (string, error) {
 		return strings.TrimSpace(string(data)), nil
 	}
 
-	// 3. ENVLOCK_KEY_PATH environment variable
+	if keyEnv := strings.TrimSpace(os.Getenv("ENVLOCK_KEY")); keyEnv != "" {
+		return keyEnv, nil
+	}
+
 	if keyPathEnv := strings.TrimSpace(os.Getenv("ENVLOCK_KEY_PATH")); keyPathEnv != "" {
 		data, err := os.ReadFile(keyPathEnv)
 		if err != nil {
@@ -69,13 +61,11 @@ func ResolvePrivateKey(keyFileFlag string) (string, error) {
 		return strings.TrimSpace(string(data)), nil
 	}
 
-	// 4. Local ./envlock.key
 	localKey := "envlock.key"
 	if data, err := os.ReadFile(localKey); err == nil {
 		return strings.TrimSpace(string(data)), nil
 	}
 
-	// 5. Global user config
 	if privGlobal, _, err := GlobalKeyPaths(); err == nil {
 		if data, err := os.ReadFile(privGlobal); err == nil {
 			return strings.TrimSpace(string(data)), nil
