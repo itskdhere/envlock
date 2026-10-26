@@ -92,6 +92,8 @@ envlock run -- npm start
 
 Decrypts `env.lock` in memory and runs the command with its variables in the environment. No plaintext `.env` is ever written to disk. Vault variables override host variables unless you pass `--no-override`. Stdin/stdout/stderr, `Ctrl+C`, and the exit code pass straight through. If your local `.env` differs from `env.lock`, EnvLock warns you and uses the vault's values.
 
+`$VAR` and `${VAR}` in unquoted and double-quoted values expand from earlier keys, then the host environment (unknown references are left as-is). Use single quotes, or `\$` inside double quotes, to keep a literal `$`.
+
 ## ⚙️ CI/CD (Zero-Disk)
 
 Store your private key as a CI secret and expose it as `ENVLOCK_KEY`:

@@ -118,8 +118,14 @@ func TestResolvePaths(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
+	t.Setenv("ENVLOCK_PARSE_TEST", "from-host")
 	src := "\xef\xbb\xbf# comment\r\n" +
 		"export EXPORTED=yes\n" +
+		"REF=${EXPORTED}/x $EXPORTED\n" +
+		"HOST=$ENVLOCK_PARSE_TEST\n" +
+		"UNKNOWN=$NOPE_UNSET_X ${NOPE_UNSET_X} p@$$w0rd\n" +
+		`ESCAPED="\$EXPORTED \\$EXPORTED"` + "\n" +
+		"LITERAL='${EXPORTED}'\n" +
 		"  INDENTED = spaced value   # inline comment\n" +
 		"HASH=abc#123\n" +
 		"COLOR=#ff0000\n" +
@@ -134,6 +140,11 @@ func TestParse(t *testing.T) {
 
 	want := map[string]string{
 		"EXPORTED": "yes",
+		"REF":      "yes/x yes",
+		"HOST":     "from-host",
+		"UNKNOWN":  "$NOPE_UNSET_X ${NOPE_UNSET_X} p@$$w0rd",
+		"ESCAPED":  `$EXPORTED \yes`,
+		"LITERAL":  "${EXPORTED}",
 		"INDENTED": "spaced value",
 		"HASH":     "abc#123",
 		"COLOR":    "#ff0000",

@@ -2,10 +2,15 @@ package env
 
 import (
 	"fmt"
+	"os"
+	"regexp"
 	"strings"
 )
 
-var unescaper = strings.NewReplacer(`\\`, `\`, `\"`, `"`, `\n`, "\n", `\r`, "\r", `\t`, "\t")
+var (
+	varRef      = regexp.MustCompile(`\$\{[A-Za-z_][A-Za-z0-9_]*\}|\$[A-Za-z_][A-Za-z0-9_]*`)
+	escOrVarRef = regexp.MustCompile(`(?s)\\.|` + varRef.String())
+)
 
 // Parse decodes dotenv bytes into a key-value map. Errors report line numbers
 // only, never line content, so secrets can't leak into logs.
@@ -33,14 +38,13 @@ func Parse(data []byte) (map[string]string, error) {
 		val = strings.TrimLeft(val, " \t")
 
 		if val == "" || !strings.ContainsRune("\"'`", rune(val[0])) {
-			// Unquoted: a '#' preceded by whitespace starts an inline comment.
 			for i := 1; i < len(val); i++ {
 				if val[i] == '#' && (val[i-1] == ' ' || val[i-1] == '\t') {
 					val = val[:i]
 					break
 				}
 			}
-			vars[key] = strings.TrimRight(val, " \t")
+			vars[key] = expand(strings.TrimRight(val, " \t"), vars, varRef)
 			continue
 		}
 
@@ -62,11 +66,39 @@ func Parse(data []byte) (map[string]string, error) {
 		}
 		src = rest
 		if quote == '"' {
-			value = unescaper.Replace(value)
+			value = expand(value, vars, escOrVarRef)
 		}
 		vars[key] = value
 	}
 	return vars, nil
+}
+
+// Unknown references stay as written so a literal '$' in a secret survives. Escapes are
+// decoded in the same pass so expanded values are never unescaped.
+func expand(s string, vars map[string]string, re *regexp.Regexp) string {
+	return re.ReplaceAllStringFunc(s, func(m string) string {
+		if m[0] == '\\' {
+			switch m[1] {
+			case 'n':
+				return "\n"
+			case 'r':
+				return "\r"
+			case 't':
+				return "\t"
+			case '\\', '"', '$':
+				return m[1:]
+			}
+			return m
+		}
+		name := strings.Trim(m, "${}")
+		if v, ok := vars[name]; ok {
+			return v
+		}
+		if v, ok := os.LookupEnv(name); ok {
+			return v
+		}
+		return m
+	})
 }
 
 func closingQuote(s string, quote byte) int {
