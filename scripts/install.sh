@@ -2,6 +2,9 @@
 set -e
 
 # EnvLock 1-line installer for Linux and macOS
+# Usage: curl -fsSL https://envlock.itskdhere.com/install.sh | bash
+# Fallback: curl -fsSL https://raw.githubusercontent.com/itskdhere/envlock/main/scripts/install.sh | bash
+
 REPO="itskdhere/envlock"
 INSTALL_DIR="${ENVLOCK_INSTALL_DIR:-/usr/local/bin}"
 

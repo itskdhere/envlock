@@ -6,7 +6,7 @@
 &nbsp;
 [![Version](https://img.shields.io/github/v/release/itskdhere/envlock?logo=semver&label=Version)](https://github.com/itskdhere/envlock/releases/latest)
 
-Zero-cloud, tamper-evident asymmetric envelope encryption for environment secrets.   
+Zero-cloud, tamper-evident asymmetric envelope encryption for environment secrets.  
 Keep your `.env` files local and uncommitted while securely checking encrypted snapshots (`env.lock`) directly into Git.
 
 ## 🚀 Key Features
@@ -17,18 +17,18 @@ Keep your `.env` files local and uncommitted while securely checking encrypted s
 - **Process-Table Hardened:** Strictly disallows passing private keys as CLI argument strings to prevent leaking secrets to `ps aux` or shell histories.
 - **Ergonomic Short Alias (`el`):** Ships with both `envlock` and the short alias `el` out of the box.
 
-## ⚡ Quick Install
+## ⚡ Quick Install / Update
 
 ### macOS & Linux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/itskdhere/envlock/main/scripts/install.sh | bash
+curl -fsSL https://envlock.itskdhere.com | bash
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-irm https://raw.githubusercontent.com/itskdhere/envlock/main/scripts/install.ps1 | iex
+irm https://envlock.itskdhere.com | iex
 ```
 
 ### Go Developers
@@ -36,6 +36,12 @@ irm https://raw.githubusercontent.com/itskdhere/envlock/main/scripts/install.ps1
 ```bash
 go install github.com/itskdhere/envlock@latest
 ```
+
+> [!TIP]
+> **Prefer direct scripts or want to inspect before running?**
+>
+> - **macOS / Linux:** [`https://envlock.itskdhere.com/install.sh`](https://envlock.itskdhere.com/install.sh) (alias: `/sh`)
+> - **Windows:** [`https://envlock.itskdhere.com/install.ps1`](https://envlock.itskdhere.com/install.ps1) (alias: `/ps1`)
 
 ## 🛠️ Quick Start
 
