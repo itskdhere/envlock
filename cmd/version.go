@@ -9,7 +9,7 @@ import (
 
 var (
 	// Version info set by compiler -ldflags
-	Version = "0.2.1"
+	Version = "0.3.0"
 	Commit  = "dev"
 	Date    = "unknown"
 )

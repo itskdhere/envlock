@@ -53,7 +53,7 @@ if ($env:VERSION) {
     }
 
     if (-not $Tag) {
-        $Tag = "v0.2.1"
+        $Tag = "v0.3.0"
     }
 }
 
