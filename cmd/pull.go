@@ -35,69 +35,12 @@ before overwriting unless --force / -y is supplied.`,
 
 		paths := env.ResolvePaths(cwd, flagEnv, flagFile)
 
-		// 1. Read .env.lock
-		envelope, err := vault.ReadVault(paths.LockFile)
-		if err != nil {
-			return fmt.Errorf("failed to read vault %s: %w", paths.LockFile, err)
-		}
-
-		// 2. Resolve caller's private key
-		privKeyStr, err := ResolvePrivateKey(flagKeyFile)
+		decrypted, err := decryptVault(paths.LockFile)
 		if err != nil {
 			return err
 		}
-
-		privKey, err := crypto.ParsePrivateKey(privKeyStr)
-		if err != nil {
-			return fmt.Errorf("failed to parse private key: %w", err)
-		}
-
-		callerPubKeyStr := crypto.FormatPublicKey(privKey.PublicKey())
-
-		// 3. Find matching recipient entry
-		var matched *vault.RecipientEntry
-		for i := range envelope.Recipients {
-			if envelope.Recipients[i].PubKey == callerPubKeyStr {
-				matched = &envelope.Recipients[i]
-				break
-			}
-		}
-
-		if matched == nil {
-			return fmt.Errorf("unauthorized: your public key (%s) is not authorized in %s", callerPubKeyStr, paths.LockFile)
-		}
-
-		// 4. Parse ephemeral public key
-		ephPub, err := crypto.ParsePublicKey(matched.EphemeralPubKey)
-		if err != nil {
-			return fmt.Errorf("corrupt ephemeral public key in vault: %w", err)
-		}
-
-		// 5. Unwrap DEK
-		dek, err := crypto.UnwrapDEK(matched.WrappedDEK, ephPub, privKey)
-		if err != nil {
-			return fmt.Errorf("failed to unwrap DEK: %w", err)
-		}
-		defer crypto.WipeBytes(dek)
-
-		// 6. Decrypt ciphertext payload
-		ivBytes, err := hex.DecodeString(envelope.IV)
-		if err != nil {
-			return fmt.Errorf("corrupt IV in vault: %w", err)
-		}
-
-		ciphertextBytes, err := hex.DecodeString(envelope.Ciphertext)
-		if err != nil {
-			return fmt.Errorf("corrupt ciphertext in vault: %w", err)
-		}
-
-		decrypted, err := crypto.DecryptPayload(ciphertextBytes, ivBytes, dek)
-		if err != nil {
-			return fmt.Errorf("failed to decrypt payload: %w", err)
-		}
 		defer crypto.WipeBytes(decrypted)
 
-		// 7. Safety check: Compare with local .env if it exists
 		if existing, err := env.ReadEnvFile(paths.EnvFile); err == nil {
 			if !bytes.Equal(existing, decrypted) {
 				if !flagPullForce {
@@ -115,7 +58,6 @@ before overwriting unless --force / -y is supplied.`,
 			}
 		}
 
-		// 8. Atomically write decrypted bytes with 0600 permissions
 		if err := env.WriteEnvFile(paths.EnvFile, decrypted); err != nil {
 			return fmt.Errorf("failed to write %s: %w", paths.EnvFile, err)
 		}
@@ -123,6 +65,65 @@ before overwriting unless --force / -y is supplied.`,
 		fmt.Println(ui.Success("Decrypted %s -> %s (byte-for-byte fidelity preserved)", paths.LockFile, paths.EnvFile))
 		return nil
 	},
+}
+
+// decryptVault decrypts lockFile in memory; the caller must wipe the result.
+func decryptVault(lockFile string) ([]byte, error) {
+	envelope, err := vault.ReadVault(lockFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read vault %s: %w", lockFile, err)
+	}
+
+	privKeyStr, err := ResolvePrivateKey(flagKeyFile)
+	if err != nil {
+		return nil, err
+	}
+
+	privKey, err := crypto.ParsePrivateKey(privKeyStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private key: %w", err)
+	}
+
+	callerPubKeyStr := crypto.FormatPublicKey(privKey.PublicKey())
+
+	var matched *vault.RecipientEntry
+	for i := range envelope.Recipients {
+		if envelope.Recipients[i].PubKey == callerPubKeyStr {
+			matched = &envelope.Recipients[i]
+			break
+		}
+	}
+
+	if matched == nil {
+		return nil, fmt.Errorf("unauthorized: your public key (%s) is not authorized in %s", callerPubKeyStr, lockFile)
+	}
+
+	ephPub, err := crypto.ParsePublicKey(matched.EphemeralPubKey)
+	if err != nil {
+		return nil, fmt.Errorf("corrupt ephemeral public key in vault: %w", err)
+	}
+
+	dek, err := crypto.UnwrapDEK(matched.WrappedDEK, ephPub, privKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unwrap DEK: %w", err)
+	}
+	defer crypto.WipeBytes(dek)
+
+	ivBytes, err := hex.DecodeString(envelope.IV)
+	if err != nil {
+		return nil, fmt.Errorf("corrupt IV in vault: %w", err)
+	}
+
+	ciphertextBytes, err := hex.DecodeString(envelope.Ciphertext)
+	if err != nil {
+		return nil, fmt.Errorf("corrupt ciphertext in vault: %w", err)
+	}
+
+	decrypted, err := crypto.DecryptPayload(ciphertextBytes, ivBytes, dek)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt payload: %w", err)
+	}
+	return decrypted, nil
 }
 
 func init() {

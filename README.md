@@ -83,6 +83,27 @@ envlock pull
 
 Restores the exact `.env` file byte-for-byte. If local unpushed changes exist, EnvLock warns you before overwriting (`--force` / `-y` to bypass).
 
+### 5. Run commands with secrets injected in memory
+
+```bash
+envlock run -- npm start
+# or: el run -e prod -- ./deploy.sh
+```
+
+Decrypts `env.lock` in memory and runs the command with its variables in the environment. No plaintext `.env` is ever written to disk. Vault variables override host variables unless you pass `--no-override`. Stdin/stdout/stderr, `Ctrl+C`, and the exit code pass straight through.
+
+## ⚙️ CI/CD (Zero-Disk)
+
+Store your private key as a CI secret and expose it as `ENVLOCK_KEY`:
+
+```yaml
+- run: envlock run -- npm test
+  env:
+    ENVLOCK_KEY: ${{ secrets.ENVLOCK_KEY }}
+```
+
+If no key can be resolved, EnvLock exits immediately with code 1 instead of waiting for input.
+
 ## 📁 Multi-Environment Support
 
 Work seamlessly with multiple environments using the `-e` / `--env` flag:
@@ -107,6 +128,7 @@ el pull -e prod
 | `envlock keygen`  | `el keygen`      | Generates a Curve25519 X25519 keypair (`--global`, `--out`, `--stdout`, `-y` / `--force`) |
 | `envlock push`    | `el push`, `enc` | Encrypts raw `.env` bytes into `env.lock` for all authorized recipients                   |
 | `envlock pull`    | `el pull`, `dec` | Decrypts `env.lock` with uncommitted changes warning/prompt (`-y` / `--force`)            |
+| `envlock run`     | `el run`         | Runs `-- <command>` with vault variables injected in memory (`--no-override`)             |
 | `envlock version` | `el version`     | Prints semantic version, commit hash, and target architecture                             |
 
 ## 🔒 Security & Verification

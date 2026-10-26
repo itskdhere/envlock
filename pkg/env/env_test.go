@@ -2,6 +2,7 @@ package env
 
 import (
 	"bytes"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -113,6 +114,54 @@ func TestResolvePaths(t *testing.T) {
 	p4 := ResolvePaths(base, "", ".env")
 	if p4.EnvFile != filepath.Join(base, ".env") || p4.LockFile != filepath.Join(base, "env.lock") {
 		t.Errorf("explicit .env mismatch: %+v", p4)
+	}
+}
+
+func TestParse(t *testing.T) {
+	src := "\xef\xbb\xbf# comment\r\n" +
+		"export EXPORTED=yes\n" +
+		"  INDENTED = spaced value   # inline comment\n" +
+		"HASH=abc#123\n" +
+		"COLOR=#ff0000\n" +
+		"EMPTY=\n" +
+		`DOUBLE="line1\nline2 \"quoted\" \\n"` + "\n" +
+		"SINGLE='raw \\n $HOME # not a comment'\n" +
+		"BACKTICK=`it's \"mixed\"`\n" +
+		"MULTI=\"-----BEGIN-----\nabc\n-----END-----\" # trailing\n" +
+		"DUP=first\n" +
+		"DUP=second\n" +
+		"LAST=no-newline"
+
+	want := map[string]string{
+		"EXPORTED": "yes",
+		"INDENTED": "spaced value",
+		"HASH":     "abc#123",
+		"COLOR":    "#ff0000",
+		"EMPTY":    "",
+		"DOUBLE":   "line1\nline2 \"quoted\" \\n",
+		"SINGLE":   `raw \n $HOME # not a comment`,
+		"BACKTICK": `it's "mixed"`,
+		"MULTI":    "-----BEGIN-----\nabc\n-----END-----",
+		"DUP":      "second",
+		"LAST":     "no-newline",
+	}
+
+	got, err := Parse([]byte(src))
+	if err != nil {
+		t.Fatalf("Parse failed: %v", err)
+	}
+	if !maps.Equal(got, want) {
+		t.Fatalf("Parse mismatch:\nGot:  %q\nWant: %q", got, want)
+	}
+
+	for input, wantLine := range map[string]string{
+		"NOEQUALS":                         "line 1:",
+		"A=\"multi\nline\"\nBAD KEY=1":     "line 3:",
+		"OK=1\nOPEN=\"never closed\nX=1\n": "line 2:",
+	} {
+		if _, err := Parse([]byte(input)); err == nil || !strings.HasPrefix(err.Error(), wantLine) {
+			t.Errorf("Parse(%q) error = %v, want prefix %q", input, err, wantLine)
+		}
 	}
 }
 

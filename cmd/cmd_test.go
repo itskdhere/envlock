@@ -205,6 +205,7 @@ func TestCommandFlagMerging(t *testing.T) {
 		{"pull", "--help"},
 		{"push", "--help"},
 		{"init", "--help"},
+		{"run", "--help"},
 		{"version"},
 	}
 
