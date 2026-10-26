@@ -54,8 +54,13 @@ func Parse(data []byte) (map[string]string, error) {
 			return nil, fmt.Errorf("line %d: unterminated %c-quoted value for %s", lineNo, quote, key)
 		}
 		value := body[:end]
+		openLine := lineNo
 		lineNo += strings.Count(value, "\n")
-		_, src, _ = strings.Cut(body[end+1:], "\n")
+		trailing, rest, _ := strings.Cut(body[end+1:], "\n")
+		if t := strings.TrimLeft(trailing, " \t"); t != "" && t[0] != '#' {
+			return nil, fmt.Errorf("line %d: unexpected text after closing quote of %s (opened on line %d)", lineNo, key, openLine)
+		}
+		src = rest
 		if quote == '"' {
 			value = unescaper.Replace(value)
 		}

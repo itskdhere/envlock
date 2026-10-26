@@ -158,6 +158,9 @@ func TestParse(t *testing.T) {
 		"NOEQUALS":                         "line 1:",
 		"A=\"multi\nline\"\nBAD KEY=1":     "line 3:",
 		"OK=1\nOPEN=\"never closed\nX=1\n": "line 2:",
+		"TAIL=\"abc\"def":                  "line 1:",
+		"SQ='it\\'s'":                      "line 1:",
+		"A=\"oops\nB=1\nC=\"x\"":           "line 3:",
 	} {
 		if _, err := Parse([]byte(input)); err == nil || !strings.HasPrefix(err.Error(), wantLine) {
 			t.Errorf("Parse(%q) error = %v, want prefix %q", input, err, wantLine)
