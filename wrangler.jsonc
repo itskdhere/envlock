@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "envlock",
+  "main": "scripts/cf-worker.js",
+  "compatibility_date": "2025-01-01",
+  "observability": {
+    "enabled": true
+  },
+  "routes": [
+    {
+      "pattern": "envlock.itskdhere.com",
+      "custom_domain": true
+    }
+  ]
+}
