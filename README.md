@@ -90,7 +90,7 @@ envlock run -- npm start
 # or: el run -e prod -- ./deploy.sh
 ```
 
-Decrypts `env.lock` in memory and runs the command with its variables in the environment. No plaintext `.env` is ever written to disk. Vault variables override host variables unless you pass `--no-override`. Stdin/stdout/stderr, `Ctrl+C`, and the exit code pass straight through.
+Decrypts `env.lock` in memory and runs the command with its variables in the environment. No plaintext `.env` is ever written to disk. Vault variables override host variables unless you pass `--no-override`. Stdin/stdout/stderr, `Ctrl+C`, and the exit code pass straight through. If your local `.env` differs from `env.lock`, EnvLock warns you and uses the vault's values.
 
 ## ⚙️ CI/CD (Zero-Disk)
 
@@ -102,7 +102,9 @@ Store your private key as a CI secret and expose it as `ENVLOCK_KEY`:
     ENVLOCK_KEY: ${{ secrets.ENVLOCK_KEY }}
 ```
 
-If no key can be resolved, EnvLock exits immediately with code 1 instead of waiting for input.
+The key itself is never passed on to the command. If no key can be resolved, EnvLock fails immediately instead of waiting for input.
+
+Exit codes are the command's own, or `125` if EnvLock fails (e.g. no key), `126` if the command can't be executed, and `127` if it isn't found, so CI can tell a secrets failure from a test failure.
 
 ## 📁 Multi-Environment Support
 
