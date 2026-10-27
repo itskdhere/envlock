@@ -4,7 +4,10 @@ set -e
 # EnvLock 1-line installer for Linux and macOS
 # Usage: curl -fsSL https://envlock.itskdhere.com/install.sh | bash
 # Fallback: curl -fsSL https://raw.githubusercontent.com/itskdhere/envlock/main/scripts/install.sh | bash
+# Options: ENVLOCK_VERSION=v1.2.3 pins a release, ENVLOCK_INSTALL_DIR=<dir> changes the install location.
 
+# Everything runs inside main, so a download cut off mid-stream executes nothing.
+main() {
 REPO="itskdhere/envlock"
 INSTALL_DIR="${ENVLOCK_INSTALL_DIR:-/usr/local/bin}"
 
@@ -35,6 +38,7 @@ esac
 echo "Detected platform: ${OS}/${ARCH}"
 
 # 3. Determine latest version
+VERSION="${ENVLOCK_VERSION:-}"
 if [ -z "$VERSION" ]; then
   echo "Fetching latest release from GitHub..."
   # Try release redirect first to avoid GitHub API rate limits
@@ -44,7 +48,8 @@ if [ -z "$VERSION" ]; then
     VERSION=$(curl -sSL -H "User-Agent: EnvLock-Installer" "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || true)
   fi
   if [ -z "$VERSION" ]; then
-    VERSION="v0.3.0"
+    echo "Error: Could not determine the latest release. Set ENVLOCK_VERSION (e.g. v0.3.0) to install a specific one." >&2
+    exit 1
   fi
 fi
 
@@ -73,28 +78,32 @@ fi
 
 # Verify SHA-256 Checksum
 echo "Verifying SHA-256 checksum..."
-if curl -fsSL "$CHECKSUM_URL" -o "${TMP_DIR}/checksums.txt" 2>/dev/null; then
-  EXPECTED_SHA=$(grep -E "[[:space:]]${FILENAME}\$" "${TMP_DIR}/checksums.txt" | awk '{print $1}')
-  if [ -n "$EXPECTED_SHA" ]; then
-    if command -v sha256sum >/dev/null 2>&1; then
-      ACTUAL_SHA=$(sha256sum "${TMP_DIR}/${FILENAME}" | awk '{print $1}')
-    elif command -v shasum >/dev/null 2>&1; then
-      ACTUAL_SHA=$(shasum -a 256 "${TMP_DIR}/${FILENAME}" | awk '{print $1}')
-    else
-      ACTUAL_SHA=""
-    fi
-
-    if [ -n "$ACTUAL_SHA" ]; then
-      if [ "$EXPECTED_SHA" != "$ACTUAL_SHA" ]; then
-        echo "Error: Checksum verification failed for ${FILENAME}!" >&2
-        echo "  Expected: ${EXPECTED_SHA}" >&2
-        echo "  Actual:   ${ACTUAL_SHA}" >&2
-        exit 1
-      fi
-      echo "Checksum verified successfully (${ACTUAL_SHA:0:16}...)"
-    fi
-  fi
+if ! curl -fsSL "$CHECKSUM_URL" -o "${TMP_DIR}/checksums.txt"; then
+  echo "Error: Failed to download checksums from ${CHECKSUM_URL}" >&2
+  exit 1
 fi
+EXPECTED_SHA=$(grep -E "[[:space:]]${FILENAME}\$" "${TMP_DIR}/checksums.txt" | awk '{print $1}')
+if [ -z "$EXPECTED_SHA" ]; then
+  echo "Error: No checksum for ${FILENAME} in ${CHECKSUM_URL}" >&2
+  exit 1
+fi
+
+if command -v sha256sum >/dev/null 2>&1; then
+  ACTUAL_SHA=$(sha256sum "${TMP_DIR}/${FILENAME}" | awk '{print $1}')
+elif command -v shasum >/dev/null 2>&1; then
+  ACTUAL_SHA=$(shasum -a 256 "${TMP_DIR}/${FILENAME}" | awk '{print $1}')
+else
+  echo "Error: sha256sum or shasum is required to verify the download" >&2
+  exit 1
+fi
+
+if [ "$EXPECTED_SHA" != "$ACTUAL_SHA" ]; then
+  echo "Error: Checksum verification failed for ${FILENAME}!" >&2
+  echo "  Expected: ${EXPECTED_SHA}" >&2
+  echo "  Actual:   ${ACTUAL_SHA}" >&2
+  exit 1
+fi
+echo "Checksum verified successfully (${ACTUAL_SHA:0:16}...)"
 
 tar -xzf "${TMP_DIR}/${FILENAME}" -C "$TMP_DIR"
 
@@ -148,3 +157,6 @@ case ":$PATH:" in
 esac
 
 "${INSTALL_DIR}/envlock" --version || true
+}
+
+main "$@"

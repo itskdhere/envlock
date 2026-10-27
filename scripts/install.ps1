@@ -20,8 +20,8 @@ if ($env:PROCESSOR_ARCHITECTURE -ne "AMD64" -and $env:PROCESSOR_ARCHITEW6432 -ne
 Write-Host "Detected platform: windows/$Arch"
 
 # 2. Determine latest version
-if ($env:VERSION) {
-    $Tag = $env:VERSION
+if ($env:ENVLOCK_VERSION) {
+    $Tag = $env:ENVLOCK_VERSION
 } else {
     Write-Host "Fetching latest release from GitHub..."
     $Tag = $null
@@ -53,7 +53,8 @@ if ($env:VERSION) {
     }
 
     if (-not $Tag) {
-        $Tag = "v0.3.0"
+        Write-Error 'Error: Could not determine the latest release. Set $env:ENVLOCK_VERSION (e.g. v0.3.0) to install a specific one.'
+        return
     }
 }
 
@@ -108,17 +109,19 @@ try {
             }
         }
     } catch {
-        # Checksums file unavailable (e.g. custom pre-release tag)
+        # Handled below: a missing checksum stops the install.
     }
 
-    if ($ExpectedHash) {
-        $ActualHash = (Get-FileHash -Path $TempZip -Algorithm SHA256).Hash.ToLower()
-        if ($ExpectedHash -ne $ActualHash) {
-            Write-Error "Error: Checksum verification failed for $FileName!`n  Expected: $ExpectedHash`n  Actual:   $ActualHash"
-            return
-        }
-        Write-Host "Checksum verified successfully ($($ActualHash.Substring(0, 16))...)" -ForegroundColor Green
+    if (-not $ExpectedHash) {
+        Write-Error "Error: No checksum for $FileName in $ChecksumUrl"
+        return
     }
+    $ActualHash = (Get-FileHash -Path $TempZip -Algorithm SHA256).Hash.ToLower()
+    if ($ExpectedHash -ne $ActualHash) {
+        Write-Error "Error: Checksum verification failed for $FileName!`n  Expected: $ExpectedHash`n  Actual:   $ActualHash"
+        return
+    }
+    Write-Host "Checksum verified successfully ($($ActualHash.Substring(0, 16))...)" -ForegroundColor Green
 
     Expand-Archive -Path $TempZip -DestinationPath $TempExtract -Force
 
