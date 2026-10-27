@@ -58,10 +58,7 @@ func WriteEnvFile(filePath string, data []byte) error {
 	}
 
 	if err := os.Rename(tmpName, filePath); err != nil {
-		_ = os.Remove(filePath)
-		if err := os.Rename(tmpName, filePath); err != nil {
-			return fmt.Errorf("failed to replace %q: %w", filePath, err)
-		}
+		return fmt.Errorf("failed to replace %q: %w", filePath, err)
 	}
 
 	return nil

@@ -3,6 +3,7 @@ package vault
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -26,6 +27,9 @@ func TestVaultReadWrite(t *testing.T) {
 
 	if err := WriteVault(vaultPath, envelope); err != nil {
 		t.Fatalf("WriteVault failed: %v", err)
+	}
+	if info, err := os.Stat(vaultPath); err == nil && runtime.GOOS != "windows" && info.Mode().Perm() != 0644 {
+		t.Errorf("env.lock mode = %v, want 0644", info.Mode().Perm())
 	}
 
 	loaded, err := ReadVault(vaultPath)

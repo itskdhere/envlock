@@ -70,6 +70,9 @@ func WriteVault(filePath string, vault *VaultEnvelope) error {
 	tmpName := tmpFile.Name()
 	defer os.Remove(tmpName) // Clean up if rename doesn't happen
 
+	// env.lock holds no secrets; CreateTemp's 0600 would lock out other readers, e.g. in containers.
+	_ = tmpFile.Chmod(0644)
+
 	if _, err := tmpFile.Write(data); err != nil {
 		tmpFile.Close()
 		return fmt.Errorf("failed to write vault to temp file: %w", err)
@@ -84,15 +87,8 @@ func WriteVault(filePath string, vault *VaultEnvelope) error {
 		return fmt.Errorf("failed to close temp file: %w", err)
 	}
 
-	// Atomic replace
-	// On Windows, os.Rename replaces the target if destination exists since Go 1.5,
-	// but to be safe across all platforms:
 	if err := os.Rename(tmpName, filePath); err != nil {
-		// Fallback for Windows if destination exists and cannot be directly replaced
-		_ = os.Remove(filePath)
-		if err := os.Rename(tmpName, filePath); err != nil {
-			return fmt.Errorf("failed to atomically write vault to %q: %w", filePath, err)
-		}
+		return fmt.Errorf("failed to atomically write vault to %q: %w", filePath, err)
 	}
 
 	return nil
