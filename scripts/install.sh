@@ -48,7 +48,7 @@ if [ -z "$VERSION" ]; then
     VERSION=$(curl -sSL -H "User-Agent: EnvLock-Installer" "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || true)
   fi
   if [ -z "$VERSION" ]; then
-    echo "Error: Could not determine the latest release. Set ENVLOCK_VERSION (e.g. v0.3.0) to install a specific one." >&2
+    echo "Error: Could not determine the latest release. Set ENVLOCK_VERSION (e.g. v0.4.0) to install a specific one." >&2
     exit 1
   fi
 fi

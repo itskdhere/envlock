@@ -1,6 +1,6 @@
 BINARY_NAME ?= envlock
 ALIAS_NAME ?= el
-VERSION ?= $(or $(shell git describe --tags --always),0.3.0)
+VERSION ?= $(or $(shell git describe --tags --always),0.4.0)
 COMMIT ?= $(or $(shell git rev-parse --short HEAD),dev)
 BUILD_DIR ?= bin
 DIST_DIR ?= dist

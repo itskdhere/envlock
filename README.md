@@ -43,7 +43,7 @@ go install github.com/itskdhere/envlock@latest
 > - **macOS / Linux:** [`https://envlock.itskdhere.com/install.sh`](https://envlock.itskdhere.com/install.sh) (alias: `/sh`)
 > - **Windows:** [`https://envlock.itskdhere.com/install.ps1`](https://envlock.itskdhere.com/install.ps1) (alias: `/ps1`)
 
-To install a specific release or change the install location, set `ENVLOCK_VERSION` (e.g. `v0.3.0`) or `ENVLOCK_INSTALL_DIR`. With the shell installer, put them right before `bash`: `curl -fsSL https://envlock.itskdhere.com | ENVLOCK_VERSION=v0.3.0 bash`.
+To install a specific release or change the install location, set `ENVLOCK_VERSION` (e.g. `v0.4.0`) or `ENVLOCK_INSTALL_DIR`. With the shell installer, put them right before `bash`: `curl -fsSL https://envlock.itskdhere.com | ENVLOCK_VERSION=v0.4.0 bash`.
 
 ## 🛠️ Quick Start
 
