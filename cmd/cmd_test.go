@@ -198,6 +198,37 @@ func TestPullOverwriteProtection(t *testing.T) {
 	}
 }
 
+func TestRecipientListIsAuthenticated(t *testing.T) {
+	tempDir := t.TempDir()
+	origDir, _ := os.Getwd()
+	defer os.Chdir(origDir)
+	_ = os.Chdir(tempDir)
+	flagEnv, flagFile, flagKeyFile = "", "", ""
+
+	priv, pub, _ := crypto.GenerateKeyPair()
+	t.Setenv("ENVLOCK_KEY", crypto.FormatPrivateKey(priv))
+	_ = os.WriteFile("envlock.pub", []byte(crypto.FormatPublicKey(pub)), 0644)
+	_ = env.WriteEnvFile(filepath.Join(tempDir, ".env"), []byte("FOO=bar\n"))
+	if err := pushCmd.RunE(pushCmd, nil); err != nil {
+		t.Fatalf("push failed: %v", err)
+	}
+	if err := pullCmd.RunE(pullCmd, nil); err != nil {
+		t.Fatalf("pull of untouched vault failed: %v", err)
+	}
+
+	envelope, _ := vault.ReadVault("env.lock")
+	_, attackerPub, _ := crypto.GenerateKeyPair()
+	envelope.Recipients = append(envelope.Recipients, vault.RecipientEntry{PubKey: crypto.FormatPublicKey(attackerPub)})
+	_ = vault.WriteVault("env.lock", envelope)
+
+	if err := pullCmd.RunE(pullCmd, nil); err == nil {
+		t.Fatal("pull must reject a vault whose recipient list was edited")
+	}
+	if err := pushCmd.RunE(pushCmd, nil); err == nil {
+		t.Fatal("push must not re-encrypt for a hand-added recipient")
+	}
+}
+
 func TestKeyResolutionWithEnvVar(t *testing.T) {
 	priv, _, _ := crypto.GenerateKeyPair()
 	privStr := crypto.FormatPrivateKey(priv)

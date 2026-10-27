@@ -73,7 +73,10 @@ func decryptVault(lockFile string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read vault %s: %w", lockFile, err)
 	}
+	return openVault(envelope, lockFile)
+}
 
+func openVault(envelope *vault.VaultEnvelope, lockFile string) ([]byte, error) {
 	privKeyStr, err := ResolvePrivateKey(flagKeyFile)
 	if err != nil {
 		return nil, err
@@ -119,9 +122,9 @@ func decryptVault(lockFile string) ([]byte, error) {
 		return nil, fmt.Errorf("corrupt ciphertext in vault: %w", err)
 	}
 
-	decrypted, err := crypto.DecryptPayload(ciphertextBytes, ivBytes, dek)
+	decrypted, err := crypto.DecryptPayload(ciphertextBytes, ivBytes, dek, envelope.PayloadAAD())
 	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt payload: %w", err)
+		return nil, fmt.Errorf("%s was modified or corrupted after it was written: %w", lockFile, err)
 	}
 	return decrypted, nil
 }

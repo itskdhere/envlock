@@ -21,7 +21,7 @@ var (
 
 // EncryptPayload encrypts plaintext bytes with AES-256-GCM using the provided 32-byte DEK.
 // Returns a 12-byte cryptographically secure random IV and the ciphertext (including tag).
-func EncryptPayload(plaintext []byte, dek []byte) (iv []byte, ciphertext []byte, err error) {
+func EncryptPayload(plaintext []byte, dek []byte, aad []byte) (iv []byte, ciphertext []byte, err error) {
 	if len(dek) != DEKLength {
 		return nil, nil, ErrInvalidDEKLength
 	}
@@ -41,12 +41,12 @@ func EncryptPayload(plaintext []byte, dek []byte) (iv []byte, ciphertext []byte,
 		return nil, nil, fmt.Errorf("failed to generate random IV: %w", err)
 	}
 
-	ciphertext = gcm.Seal(nil, iv, plaintext, nil)
+	ciphertext = gcm.Seal(nil, iv, plaintext, aad)
 	return iv, ciphertext, nil
 }
 
 // DecryptPayload decrypts ciphertext using AES-256-GCM with the provided 12-byte IV and 32-byte DEK.
-func DecryptPayload(ciphertext []byte, iv []byte, dek []byte) ([]byte, error) {
+func DecryptPayload(ciphertext []byte, iv []byte, dek []byte, aad []byte) ([]byte, error) {
 	if len(dek) != DEKLength {
 		return nil, ErrInvalidDEKLength
 	}
@@ -64,7 +64,7 @@ func DecryptPayload(ciphertext []byte, iv []byte, dek []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to create GCM mode: %w", err)
 	}
 
-	plaintext, err := gcm.Open(nil, iv, ciphertext, nil)
+	plaintext, err := gcm.Open(nil, iv, ciphertext, aad)
 	if err != nil {
 		return nil, fmt.Errorf("payload decryption failed: %w", err)
 	}

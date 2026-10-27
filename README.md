@@ -72,7 +72,9 @@ envlock push
 # or: el push
 ```
 
-Encrypts your plaintext `.env` into a tamper-evident `env.lock` file. You can safely commit `env.lock` to Git.
+Encrypts your plaintext `.env` into a tamper-evident `env.lock` file. You can safely commit `env.lock` to Git. Later pushes re-encrypt for the same recipients and need a key that can decrypt the current `env.lock`.
+
+Editing `env.lock` by hand, including its recipient list, makes decryption fail. Anyone with write access can still replace the whole file, so treat unexpected `env.lock` changes in pull requests with care.
 
 ### 4. Decrypt `env.lock` into local `.env`
 

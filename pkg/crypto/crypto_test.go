@@ -93,7 +93,7 @@ func TestAESPayloadRoundTrip(t *testing.T) {
 	}
 
 	plaintext := []byte("SECRET_KEY=super_secret_value\nDATABASE_URL=postgres://localhost:5432\n# Comment line\n")
-	iv, ciphertext, err := EncryptPayload(plaintext, dek)
+	iv, ciphertext, err := EncryptPayload(plaintext, dek, nil)
 	if err != nil {
 		t.Fatalf("EncryptPayload failed: %v", err)
 	}
@@ -102,7 +102,7 @@ func TestAESPayloadRoundTrip(t *testing.T) {
 		t.Fatalf("unexpected IV length: %d", len(iv))
 	}
 
-	decrypted, err := DecryptPayload(ciphertext, iv, dek)
+	decrypted, err := DecryptPayload(ciphertext, iv, dek, nil)
 	if err != nil {
 		t.Fatalf("DecryptPayload failed: %v", err)
 	}
@@ -116,7 +116,7 @@ func TestAESPayloadRoundTrip(t *testing.T) {
 	copy(tampered, ciphertext)
 	tampered[0] ^= 0xFF
 
-	if _, err := DecryptPayload(tampered, iv, dek); err == nil {
+	if _, err := DecryptPayload(tampered, iv, dek, nil); err == nil {
 		t.Fatalf("expected error decrypting tampered ciphertext")
 	}
 }

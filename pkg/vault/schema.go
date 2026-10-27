@@ -1,5 +1,7 @@
 package vault
 
+import "encoding/json"
+
 // VaultVersion represents the current vault envelope schema version.
 const VaultVersion = 1
 
@@ -20,4 +22,14 @@ type VaultEnvelope struct {
 	IV         string           `json:"iv"`
 	Ciphertext string           `json:"ciphertext"`
 	Recipients []RecipientEntry `json:"recipients"`
+}
+
+// PayloadAAD binds the recipient list to the payload, so editing the list breaks decryption.
+func (v *VaultEnvelope) PayloadAAD() []byte {
+	keys := make([]string, len(v.Recipients))
+	for i, r := range v.Recipients {
+		keys[i] = r.PubKey
+	}
+	aad, _ := json.Marshal(keys)
+	return aad
 }
