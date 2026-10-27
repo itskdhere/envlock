@@ -42,6 +42,7 @@ before overwriting unless --force / -y is supplied.`,
 		defer crypto.WipeBytes(decrypted)
 
 		if existing, err := env.ReadEnvFile(paths.EnvFile); err == nil {
+			defer crypto.WipeBytes(existing)
 			if !bytes.Equal(existing, decrypted) {
 				if !flagPullForce {
 					fmt.Println(ui.Warning("Local %s has changes differing from %s", paths.EnvFile, paths.LockFile))

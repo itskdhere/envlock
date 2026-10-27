@@ -46,9 +46,11 @@ cannot be executed, 127 if it is not found.`,
 		os.Unsetenv("ENVLOCK_KEY")
 		os.Unsetenv("ENVLOCK_KEY_PATH")
 
-		if local, err := env.ReadEnvFile(paths.EnvFile); err == nil && !bytes.Equal(local, decrypted) {
+		local, err := env.ReadEnvFile(paths.EnvFile)
+		if err == nil && !bytes.Equal(local, decrypted) {
 			fmt.Fprintln(os.Stderr, ui.Warning("Local %s differs from %s; running with the vault's values (push or pull to sync)", paths.EnvFile, paths.LockFile))
 		}
+		crypto.WipeBytes(local)
 		vars, err := env.Parse(decrypted)
 		crypto.WipeBytes(decrypted)
 		if err != nil {
