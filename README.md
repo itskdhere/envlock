@@ -61,7 +61,7 @@ envlock keygen
 # or: el keygen
 ```
 
-Creates `envlock.key` (mode 0600, owner-only) and `envlock.pub`.
+Creates `envlock.key` (readable only by you, on every OS) and `envlock.pub`. EnvLock warns if the key isn't gitignored.
 
 > **Tip:** Use `envlock keygen --global` (or `-g`) to store your keypair centrally in your user config directory (`~/.config/envlock/keys/` or `%APPDATA%\envlock\keys\`) across all projects.
 

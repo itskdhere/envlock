@@ -1,11 +1,14 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	osexec "os/exec"
 	"path/filepath"
 
 	"github.com/itskdhere/envlock/pkg/crypto"
+	"github.com/itskdhere/envlock/pkg/env"
 	"github.com/itskdhere/envlock/pkg/ui"
 	"github.com/spf13/cobra"
 )
@@ -21,7 +24,7 @@ var keygenCmd = &cobra.Command{
 	Use:   "keygen",
 	Short: "Generate a Curve25519 (X25519) identity keypair",
 	Long: `Generates a cryptographic X25519 keypair for envelope encryption.
-The private key (el_sec_...) is saved with restricted 0600 permissions.
+The private key (el_sec_...) is saved readable only by you (0600 on Unix, an owner-only ACL on Windows).
 The public key (el_pub_...) can be safely shared with teammates.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		priv, pub, err := crypto.GenerateKeyPair()
@@ -70,11 +73,9 @@ The public key (el_pub_...) can be safely shared with teammates.`,
 			}
 		}
 
-		// Write private key with 0600
-		if err := os.WriteFile(privPath, []byte(privFormatted+"\n"), 0600); err != nil {
+		if err := env.WriteEnvFile(privPath, []byte(privFormatted+"\n")); err != nil {
 			return fmt.Errorf("failed to write private key to %q: %w", privPath, err)
 		}
-		_ = os.Chmod(privPath, 0600)
 
 		// Write public key with 0644
 		if err := os.WriteFile(pubPath, []byte(pubFormatted+"\n"), 0644); err != nil {
@@ -82,7 +83,7 @@ The public key (el_pub_...) can be safely shared with teammates.`,
 		}
 
 		lines := []string{
-			fmt.Sprintf("• Private Key: %s  (mode 0600, NEVER share or commit)", privPath),
+			fmt.Sprintf("• Private Key: %s  (owner-only, NEVER share or commit)", privPath),
 			fmt.Sprintf("• Public Key:  %s", pubPath),
 			"",
 			"Public Identity Key:",
@@ -92,8 +93,20 @@ The public key (el_pub_...) can be safely shared with teammates.`,
 		}
 
 		fmt.Println(ui.Banner("Keypair Generated Successfully", lines))
+		if !flagKeygenGlobal && notGitIgnored(privPath) {
+			fmt.Println(ui.Warning("%s is not gitignored. Run 'envlock init' before committing, or use --global", privPath))
+		}
 		return nil
 	},
+}
+
+// notGitIgnored reports whether path is inside a git work tree and not ignored by it.
+func notGitIgnored(path string) bool {
+	cmd := osexec.Command("git", "check-ignore", "-q", filepath.Base(path))
+	cmd.Dir = filepath.Dir(path)
+	err := cmd.Run()
+	var exitErr *osexec.ExitError
+	return errors.As(err, &exitErr) && exitErr.ExitCode() == 1
 }
 
 func init() {

@@ -275,6 +275,27 @@ func TestExistingVaultIsNotClobbered(t *testing.T) {
 	}
 }
 
+func TestNotGitIgnored(t *testing.T) {
+	if _, err := osexec.LookPath("git"); err != nil {
+		t.Skip("git not installed")
+	}
+	dir := t.TempDir()
+	t.Setenv("GIT_CEILING_DIRECTORIES", filepath.Dir(dir))
+	key := filepath.Join(dir, "envlock.key")
+
+	if notGitIgnored(key) {
+		t.Fatal("a key outside any git repository must not warn")
+	}
+	_ = osexec.Command("git", "-C", dir, "init", "-q").Run()
+	if !notGitIgnored(key) {
+		t.Fatal("an unignored key inside a git repository must warn")
+	}
+	_ = os.WriteFile(filepath.Join(dir, ".gitignore"), []byte("*.key\n"), 0644)
+	if notGitIgnored(key) {
+		t.Fatal("an ignored key must not warn")
+	}
+}
+
 func TestKeyResolutionWithEnvVar(t *testing.T) {
 	priv, _, _ := crypto.GenerateKeyPair()
 	privStr := crypto.FormatPrivateKey(priv)

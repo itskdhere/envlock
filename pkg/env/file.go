@@ -23,7 +23,8 @@ func ReadEnvFile(filePath string) ([]byte, error) {
 	return data, nil
 }
 
-// WriteEnvFile atomically writes raw bytes to filePath with restricted 0600 permissions.
+// WriteEnvFile atomically writes raw bytes to filePath, readable only by the current user
+// (0600 on Unix, an owner-only ACL on Windows).
 func WriteEnvFile(filePath string, data []byte) error {
 	dir := filepath.Dir(filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -37,8 +38,9 @@ func WriteEnvFile(filePath string, data []byte) error {
 	tmpName := tmpFile.Name()
 	defer os.Remove(tmpName)
 
-	if err := tmpFile.Chmod(FilePermOwnerOnly); err != nil {
-		// Non-fatal on filesystems that don't support POSIX chmod (e.g. Windows FAT32/NTFS standard mode)
+	if err := restrictToOwner(tmpName); err != nil {
+		tmpFile.Close()
+		return fmt.Errorf("failed to restrict permissions on %q: %w", tmpName, err)
 	}
 
 	if _, err := tmpFile.Write(data); err != nil {
@@ -62,7 +64,6 @@ func WriteEnvFile(filePath string, data []byte) error {
 		}
 	}
 
-	_ = os.Chmod(filePath, FilePermOwnerOnly)
 	return nil
 }
 
