@@ -15,7 +15,7 @@ var initCmd = &cobra.Command{
 	Long: `Prepares the current workspace for EnvLock by:
 1. Creating a sample .env file if neither it nor env.lock exists.
 2. Appending .env, .env.*, *.key, and *.pub to .gitignore, while exempting .env.example and lock files (!env.lock, !env.*.lock).
-3. Appending *.lock merge=binary to .gitattributes to prevent Git merge conflict corruption.`,
+3. Appending env.lock and env.*.lock merge=binary rules to .gitattributes to prevent Git merge conflict corruption.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cwd, err := os.Getwd()
 		if err != nil {
