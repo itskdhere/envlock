@@ -66,16 +66,17 @@ func WriteEnvFile(filePath string, data []byte) error {
 	return nil
 }
 
-// EnsureGitignore ensures that sensitive files (.env, .env.*.local, *.key, *.pub) are ignored
-// while ensuring env lock files (!env.lock, !env.*.lock) are never ignored.
+// EnsureGitignore ensures that sensitive files (.env, .env.*, *.key, *.pub) are ignored
+// while .env.example and env lock files (!env.lock, !env.*.lock) are never ignored.
 // Returns the list of patterns that were newly appended.
 func EnsureGitignore(baseDir string) ([]string, error) {
 	gitignorePath := filepath.Join(baseDir, ".gitignore")
 	required := []string{
 		".env",
-		".env.*.local",
+		".env.*",
 		"*.key",
 		"*.pub",
+		"!.env.example",
 		"!env.lock",
 		"!env.*.lock",
 	}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"maps"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -37,8 +38,8 @@ func TestEnsureGitignore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("EnsureGitignore failed: %v", err)
 	}
-	if len(added) != 6 {
-		t.Fatalf("expected 6 entries added, got %d", len(added))
+	if len(added) != 7 {
+		t.Fatalf("expected 7 entries added, got %d", len(added))
 	}
 
 	// Second run should be no-op
@@ -53,9 +54,37 @@ func TestEnsureGitignore(t *testing.T) {
 	// Verify content
 	content, _ := os.ReadFile(filepath.Join(tempDir, ".gitignore"))
 	str := string(content)
-	for _, expected := range []string{".env", ".env.*.local", "*.key", "*.pub", "!env.lock", "!env.*.lock"} {
+	for _, expected := range []string{".env", ".env.*", "*.key", "*.pub", "!.env.example", "!env.lock", "!env.*.lock"} {
 		if !strings.Contains(str, expected) {
 			t.Errorf("gitignore missing expected entry: %s", expected)
+		}
+	}
+}
+
+func TestGitignoreRules(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not installed")
+	}
+	dir := t.TempDir()
+	if err := exec.Command("git", "-C", dir, "init", "-q").Run(); err != nil {
+		t.Fatalf("git init failed: %v", err)
+	}
+	if _, err := EnsureGitignore(dir); err != nil {
+		t.Fatalf("EnsureGitignore failed: %v", err)
+	}
+
+	for name, wantIgnored := range map[string]bool{
+		".env":            true,
+		".env.prod":       true,
+		".env.prod.local": true,
+		"envlock.key":     true,
+		".env.example":    false,
+		"env.lock":        false,
+		"env.prod.lock":   false,
+	} {
+		ignored := exec.Command("git", "-C", dir, "check-ignore", "-q", name).Run() == nil
+		if ignored != wantIgnored {
+			t.Errorf("%s: ignored = %v, want %v", name, ignored, wantIgnored)
 		}
 	}
 }

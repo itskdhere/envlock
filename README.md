@@ -52,7 +52,7 @@ envlock init
 # or: el init
 ```
 
-Adds safety rules to `.gitignore` (ignoring `.env`, `*.key`, and `*.pub` while keeping `!env.lock` and `!env.*.lock` tracked) and `.gitattributes` (binary merge protection).
+Adds safety rules to `.gitignore` (ignoring `.env`, `.env.*`, `*.key`, and `*.pub` while keeping `.env.example`, `env.lock` and `env.*.lock` tracked) and `.gitattributes` (binary merge protection).
 
 ### 2. Generate your identity keypair
 

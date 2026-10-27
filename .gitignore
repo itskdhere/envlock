@@ -4,9 +4,10 @@ dist/
 
 # EnvLock secrets & keys
 .env
-.env.*.local
+.env.*
 *.key
 *.pub
+!.env.example
 !env.lock
 !env.*.lock
 
