@@ -13,7 +13,7 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize project safety defaults (.gitignore, .gitattributes, sample .env)",
 	Long: `Prepares the current workspace for EnvLock by:
-1. Creating a sample .env file if none exists.
+1. Creating a sample .env file if neither it nor env.lock exists.
 2. Appending .env, .env.*.local, *.key, and *.pub to .gitignore, while exempting lock files (!env.lock, !env.*.lock).
 3. Appending *.lock merge=binary to .gitattributes to prevent Git merge conflict corruption.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -24,29 +24,33 @@ var initCmd = &cobra.Command{
 
 		paths := env.ResolvePaths(cwd, flagEnv, flagFile)
 
-		// 1. Create default .env if missing
-		createdEnv, err := env.CreateDefaultEnv(paths.EnvFile)
-		if err != nil {
-			return fmt.Errorf("failed to create default env file: %w", err)
+		_, err = os.Stat(paths.LockFile)
+		hasVault := err == nil
+
+		createdEnv := false
+		if !hasVault {
+			if createdEnv, err = env.CreateDefaultEnv(paths.EnvFile); err != nil {
+				return fmt.Errorf("failed to create default env file: %w", err)
+			}
 		}
 
-		// 2. Ensure .gitignore rules
 		addedGitignore, err := env.EnsureGitignore(cwd)
 		if err != nil {
 			return fmt.Errorf("failed to update .gitignore: %w", err)
 		}
 
-		// 3. Ensure .gitattributes rules
 		addedGitattributes, err := env.EnsureGitattributes(cwd)
 		if err != nil {
 			return fmt.Errorf("failed to update .gitattributes: %w", err)
 		}
 
-		// Render styled summary
 		var lines []string
-		if createdEnv {
+		switch {
+		case hasVault:
+			lines = append(lines, fmt.Sprintf("• Existing vault found, no template env file created: %s", paths.LockFile))
+		case createdEnv:
 			lines = append(lines, fmt.Sprintf("+ Created template env file: %s", paths.EnvFile))
-		} else {
+		default:
 			lines = append(lines, fmt.Sprintf("• Existing env file preserved: %s", paths.EnvFile))
 		}
 
@@ -64,8 +68,13 @@ var initCmd = &cobra.Command{
 
 		lines = append(lines, "")
 		lines = append(lines, "Next steps:")
-		lines = append(lines, "  1. Generate your identity key:  envlock keygen")
-		lines = append(lines, "  2. Encrypt your secrets:        envlock push")
+		if hasVault {
+			lines = append(lines, "  1. Decrypt your secrets:  envlock pull")
+			lines = append(lines, "     No access yet? Run 'envlock keygen' and ask a teammate to add your envlock.pub")
+		} else {
+			lines = append(lines, "  1. Generate your identity key:  envlock keygen")
+			lines = append(lines, "  2. Encrypt your secrets:        envlock push")
+		}
 
 		banner := ui.Banner("EnvLock Initialized", lines)
 		fmt.Println(banner)

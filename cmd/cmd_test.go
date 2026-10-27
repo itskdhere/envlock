@@ -205,9 +205,8 @@ func TestRecipientListIsAuthenticated(t *testing.T) {
 	_ = os.Chdir(tempDir)
 	flagEnv, flagFile, flagKeyFile = "", "", ""
 
-	priv, pub, _ := crypto.GenerateKeyPair()
+	priv, _, _ := crypto.GenerateKeyPair()
 	t.Setenv("ENVLOCK_KEY", crypto.FormatPrivateKey(priv))
-	_ = os.WriteFile("envlock.pub", []byte(crypto.FormatPublicKey(pub)), 0644)
 	_ = env.WriteEnvFile(filepath.Join(tempDir, ".env"), []byte("FOO=bar\n"))
 	if err := pushCmd.RunE(pushCmd, nil); err != nil {
 		t.Fatalf("push failed: %v", err)
@@ -226,6 +225,53 @@ func TestRecipientListIsAuthenticated(t *testing.T) {
 	}
 	if err := pushCmd.RunE(pushCmd, nil); err == nil {
 		t.Fatal("push must not re-encrypt for a hand-added recipient")
+	}
+}
+
+func TestFirstPushEncryptsForOwnKey(t *testing.T) {
+	tempDir := t.TempDir()
+	origDir, _ := os.Getwd()
+	defer os.Chdir(origDir)
+	_ = os.Chdir(tempDir)
+	flagEnv, flagFile, flagKeyFile = "", "", ""
+
+	priv, _, _ := crypto.GenerateKeyPair()
+	_, strayPub, _ := crypto.GenerateKeyPair()
+	t.Setenv("ENVLOCK_KEY", crypto.FormatPrivateKey(priv))
+	_ = os.WriteFile("envlock.pub", []byte(crypto.FormatPublicKey(strayPub)), 0644)
+	_ = env.WriteEnvFile(filepath.Join(tempDir, ".env"), []byte("FOO=bar\n"))
+	if err := pushCmd.RunE(pushCmd, nil); err != nil {
+		t.Fatalf("push failed: %v", err)
+	}
+	if err := pullCmd.RunE(pullCmd, nil); err != nil {
+		t.Fatalf("first push must encrypt for the private key in use, not envlock.pub: %v", err)
+	}
+}
+
+func TestExistingVaultIsNotClobbered(t *testing.T) {
+	tempDir := t.TempDir()
+	origDir, _ := os.Getwd()
+	defer os.Chdir(origDir)
+	_ = os.Chdir(tempDir)
+	flagEnv, flagFile, flagKeyFile = "", "", ""
+
+	priv, _, _ := crypto.GenerateKeyPair()
+	t.Setenv("ENVLOCK_KEY", crypto.FormatPrivateKey(priv))
+	_ = os.WriteFile("env.lock", []byte("not json"), 0644)
+
+	if err := initCmd.RunE(initCmd, nil); err != nil {
+		t.Fatalf("init failed: %v", err)
+	}
+	if _, err := os.Stat(".env"); !os.IsNotExist(err) {
+		t.Fatal("init must not create a template .env when env.lock exists")
+	}
+
+	_ = env.WriteEnvFile(filepath.Join(tempDir, ".env"), []byte("FOO=bar\n"))
+	if err := pushCmd.RunE(pushCmd, nil); err == nil {
+		t.Fatal("push must not overwrite an unreadable env.lock")
+	}
+	if data, _ := os.ReadFile("env.lock"); string(data) != "not json" {
+		t.Fatal("env.lock was modified")
 	}
 }
 
@@ -264,13 +310,12 @@ func TestRunExitCodesAndKeyStripping(t *testing.T) {
 		t.Fatalf("missing vault: expected exit 125, got %v", err)
 	}
 
-	priv, pub, _ := crypto.GenerateKeyPair()
-	_ = os.WriteFile("envlock.pub", []byte(crypto.FormatPublicKey(pub)), 0644)
+	priv, _, _ := crypto.GenerateKeyPair()
+	t.Setenv("ENVLOCK_KEY", crypto.FormatPrivateKey(priv))
 	_ = env.WriteEnvFile(filepath.Join(tempDir, ".env"), []byte("FOO=bar\nLEAK=${ENVLOCK_KEY}\n"))
 	if err := pushCmd.RunE(pushCmd, nil); err != nil {
 		t.Fatalf("push failed: %v", err)
 	}
-	t.Setenv("ENVLOCK_KEY", crypto.FormatPrivateKey(priv))
 
 	if err := runCmd.RunE(runCmd, []string{"envlock-no-such-cmd"}); !errors.As(err, &exitErr) || exitErr.code != 127 {
 		t.Fatalf("missing command: expected exit 127, got %v", err)

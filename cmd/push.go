@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 
 	"github.com/itskdhere/envlock/pkg/crypto"
@@ -19,7 +21,7 @@ var pushCmd = &cobra.Command{
 	Long: `Encrypts raw .env bytes into env.lock using Curve25519 asymmetric envelope encryption.
 Preserves 100% of formatting, comments, blank lines, and custom quotes.
 Re-encrypts for the recipients of the existing env.lock, which your key must be able to
-decrypt, or auto-discovers your local/global public key on the initial push.`,
+decrypt, or encrypts for your own key on the initial push.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cwd, err := os.Getwd()
 		if err != nil {
@@ -35,7 +37,9 @@ decrypt, or auto-discovers your local/global public key on the initial push.`,
 		defer crypto.WipeBytes(rawEnv)
 
 		var recipientPubKeys []string
-		if existingVault, err := vault.ReadVault(paths.LockFile); err == nil {
+		existingVault, err := vault.ReadVault(paths.LockFile)
+		switch {
+		case err == nil:
 			// Decrypting authenticates the recipient list, so hand-added recipients are rejected here.
 			decrypted, err := openVault(existingVault, paths.LockFile)
 			if err != nil {
@@ -50,14 +54,14 @@ decrypt, or auto-discovers your local/global public key on the initial push.`,
 					recipientPubKeys = append(recipientPubKeys, rec.PubKey)
 				}
 			}
-		}
-
-		if len(recipientPubKeys) == 0 {
-			defaultPub, err := ResolveDefaultPublicKey()
+		case errors.Is(err, fs.ErrNotExist):
+			privKey, err := loadPrivateKey()
 			if err != nil {
-				return fmt.Errorf("no recipient public key found for initial push: %w", err)
+				return err
 			}
-			recipientPubKeys = append(recipientPubKeys, defaultPub)
+			recipientPubKeys = []string{crypto.FormatPublicKey(privKey.PublicKey())}
+		default:
+			return fmt.Errorf("refusing to overwrite %s: %w", paths.LockFile, err)
 		}
 
 		dek, err := crypto.GenerateDEK()

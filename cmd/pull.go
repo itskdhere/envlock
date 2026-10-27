@@ -77,14 +77,9 @@ func decryptVault(lockFile string) ([]byte, error) {
 }
 
 func openVault(envelope *vault.VaultEnvelope, lockFile string) ([]byte, error) {
-	privKeyStr, err := ResolvePrivateKey(flagKeyFile)
+	privKey, err := loadPrivateKey()
 	if err != nil {
 		return nil, err
-	}
-
-	privKey, err := crypto.ParsePrivateKey(privKeyStr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse private key: %w", err)
 	}
 
 	callerPubKeyStr := crypto.FormatPublicKey(privKey.PublicKey())

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"crypto/ecdh"
 	"errors"
 	"fmt"
 	"io"
@@ -75,28 +76,14 @@ func ResolvePrivateKey(keyFileFlag string) (string, error) {
 	return "", errors.New("no private key found. Set ENVLOCK_KEY, use --key-file, or run 'envlock keygen'")
 }
 
-// ResolveDefaultPublicKey locates an available public key for initial vault push:
-// 1. Local ./envlock.pub
-// 2. Global user config default.pub
-func ResolveDefaultPublicKey() (string, error) {
-	// 1. Local ./envlock.pub
-	localPub := "envlock.pub"
-	if data, err := os.ReadFile(localPub); err == nil {
-		keyStr := strings.TrimSpace(string(data))
-		if _, err := crypto.ParsePublicKey(keyStr); err == nil {
-			return keyStr, nil
-		}
+func loadPrivateKey() (*ecdh.PrivateKey, error) {
+	keyStr, err := ResolvePrivateKey(flagKeyFile)
+	if err != nil {
+		return nil, err
 	}
-
-	// 2. Global user config
-	if _, pubGlobal, err := GlobalKeyPaths(); err == nil {
-		if data, err := os.ReadFile(pubGlobal); err == nil {
-			keyStr := strings.TrimSpace(string(data))
-			if _, err := crypto.ParsePublicKey(keyStr); err == nil {
-				return keyStr, nil
-			}
-		}
+	privKey, err := crypto.ParsePrivateKey(keyStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private key: %w", err)
 	}
-
-	return "", errors.New("no public key found. Run 'envlock keygen' to generate your keypair")
+	return privKey, nil
 }
