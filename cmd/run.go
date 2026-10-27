@@ -42,6 +42,10 @@ cannot be executed, 127 if it is not found.`,
 		if err != nil {
 			return &exitError{125, err}
 		}
+		// Unset before Parse, or a ${ENVLOCK_KEY} vault value would expand to the key.
+		os.Unsetenv("ENVLOCK_KEY")
+		os.Unsetenv("ENVLOCK_KEY_PATH")
+
 		if local, err := env.ReadEnvFile(paths.EnvFile); err == nil && !bytes.Equal(local, decrypted) {
 			fmt.Fprintln(os.Stderr, ui.Warning("Local %s differs from %s; running with the vault's values (push or pull to sync)", paths.EnvFile, paths.LockFile))
 		}
@@ -50,10 +54,6 @@ cannot be executed, 127 if it is not found.`,
 		if err != nil {
 			return &exitError{125, fmt.Errorf("failed to parse decrypted %s: %w", paths.LockFile, err)}
 		}
-
-		// The command gets the decrypted vars, never the key that can decrypt every vault.
-		os.Unsetenv("ENVLOCK_KEY")
-		os.Unsetenv("ENVLOCK_KEY_PATH")
 
 		switch err := exec.Run(args[0], args[1:], vars, !flagRunNoOverride); {
 		case errors.Is(err, osexec.ErrNotFound):

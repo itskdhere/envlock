@@ -3,7 +3,9 @@ package cmd
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os"
+	osexec "os/exec"
 	"path/filepath"
 	"testing"
 
@@ -11,6 +13,19 @@ import (
 	"github.com/itskdhere/envlock/pkg/env"
 	"github.com/itskdhere/envlock/pkg/vault"
 )
+
+// run execs or exits, so the test binary re-runs itself as envlock and as the command.
+func TestMain(m *testing.M) {
+	if len(os.Args) > 1 && os.Args[1] == "print-leak" {
+		fmt.Print(os.Getenv("LEAK"))
+		os.Exit(0)
+	}
+	if os.Getenv("ENVLOCK_TEST_RUN") != "" {
+		rootCmd.SetArgs([]string{"run", "--", os.Args[0], "print-leak"})
+		os.Exit(Execute())
+	}
+	os.Exit(m.Run())
+}
 
 func TestEndToEndFidelity(t *testing.T) {
 	tempDir := t.TempDir()
@@ -220,7 +235,7 @@ func TestRunExitCodesAndKeyStripping(t *testing.T) {
 
 	priv, pub, _ := crypto.GenerateKeyPair()
 	_ = os.WriteFile("envlock.pub", []byte(crypto.FormatPublicKey(pub)), 0644)
-	_ = env.WriteEnvFile(filepath.Join(tempDir, ".env"), []byte("FOO=bar\n"))
+	_ = env.WriteEnvFile(filepath.Join(tempDir, ".env"), []byte("FOO=bar\nLEAK=${ENVLOCK_KEY}\n"))
 	if err := pushCmd.RunE(pushCmd, nil); err != nil {
 		t.Fatalf("push failed: %v", err)
 	}
@@ -231,6 +246,17 @@ func TestRunExitCodesAndKeyStripping(t *testing.T) {
 	}
 	if os.Getenv("ENVLOCK_KEY") != "" {
 		t.Fatal("ENVLOCK_KEY must not be passed on to the command")
+	}
+
+	child := osexec.Command(os.Args[0])
+	child.Dir = tempDir
+	child.Env = append(os.Environ(), "ENVLOCK_TEST_RUN=1", "ENVLOCK_KEY="+crypto.FormatPrivateKey(priv))
+	out, err := child.Output()
+	if err != nil {
+		t.Fatalf("run subprocess failed: %v", err)
+	}
+	if string(out) != "${ENVLOCK_KEY}" {
+		t.Fatalf("vault value ${ENVLOCK_KEY} must not expand to the key, got %q", out)
 	}
 }
 
