@@ -72,11 +72,11 @@ func TestECDHAndHKDF(t *testing.T) {
 		t.Fatalf("ECDH shared secrets do not match")
 	}
 
-	kekAlice, err := DeriveKEK(secretAliceBob, pubBob.Bytes())
+	kekAlice, err := DeriveKEK(secretAliceBob, pubAlice.Bytes(), pubBob.Bytes())
 	if err != nil {
 		t.Fatalf("Alice KEK derivation failed: %v", err)
 	}
-	kekBob, err := DeriveKEK(secretBobAlice, pubBob.Bytes())
+	kekBob, err := DeriveKEK(secretBobAlice, pubAlice.Bytes(), pubBob.Bytes())
 	if err != nil {
 		t.Fatalf("Bob KEK derivation failed: %v", err)
 	}

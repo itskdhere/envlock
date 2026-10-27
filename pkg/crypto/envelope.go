@@ -48,7 +48,7 @@ func WrapDEK(dek []byte, recipientPub *ecdh.PublicKey) (*ecdh.PublicKey, string,
 	}
 	defer WipeBytes(sharedSecret)
 
-	kek, err := DeriveKEK(sharedSecret, recipientPub.Bytes())
+	kek, err := DeriveKEK(sharedSecret, ephPub.Bytes(), recipientPub.Bytes())
 	if err != nil {
 		return nil, "", err
 	}
@@ -101,7 +101,7 @@ func UnwrapDEK(wrappedDEKHex string, ephemeralPub *ecdh.PublicKey, recipientPriv
 	}
 	defer WipeBytes(sharedSecret)
 
-	kek, err := DeriveKEK(sharedSecret, recipientPriv.PublicKey().Bytes())
+	kek, err := DeriveKEK(sharedSecret, ephemeralPub.Bytes(), recipientPriv.PublicKey().Bytes())
 	if err != nil {
 		return nil, err
 	}

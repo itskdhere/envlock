@@ -31,9 +31,9 @@ func DeriveSharedSecret(priv *ecdh.PrivateKey, pub *ecdh.PublicKey) ([]byte, err
 }
 
 // DeriveKEK derives a 256-bit Key Encryption Key (KEK) using HKDF-SHA256
-// with salt "envlock_v1" and the recipient's raw public key as info.
-func DeriveKEK(sharedSecret []byte, recipientPubBytes []byte) ([]byte, error) {
-	kek, err := hkdf.Key(sha256.New, sharedSecret, HKDFSalt, string(recipientPubBytes), 32)
+// with salt "envlock_v1" and the ephemeral and recipient raw public keys as info.
+func DeriveKEK(sharedSecret []byte, ephemeralPubBytes []byte, recipientPubBytes []byte) ([]byte, error) {
+	kek, err := hkdf.Key(sha256.New, sharedSecret, HKDFSalt, string(ephemeralPubBytes)+string(recipientPubBytes), 32)
 	if err != nil {
 		return nil, fmt.Errorf("hkdf key derivation failed: %w", err)
 	}
