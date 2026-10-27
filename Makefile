@@ -78,6 +78,9 @@ release: clean
 	(cd $(DIST_DIR)/tmp_windows_amd64 && zip -r ../$(BINARY_NAME)_$(VERSION)_windows_amd64.zip .)
 	rm -rf $(DIST_DIR)/tmp_windows_amd64
 
+	# Installers, served by the Cloudflare worker from the latest release
+	cp scripts/install.sh scripts/install.ps1 $(DIST_DIR)/
+
 	# Generate SHA-256 Checksums
 	(cd $(DIST_DIR) && rm -f checksums.txt && (sha256sum $(BINARY_NAME)* 2>/dev/null || shasum -a 256 $(BINARY_NAME)*) > checksums.txt)
 

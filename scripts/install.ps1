@@ -1,6 +1,6 @@
 # EnvLock 1-line installer for Windows (PowerShell)
 # Usage: irm https://envlock.itskdhere.com/install.ps1 | iex
-# Fallback: irm https://raw.githubusercontent.com/itskdhere/envlock/main/scripts/install.ps1 | iex
+# Fallback: irm https://github.com/itskdhere/envlock/releases/latest/download/install.ps1 | iex
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"

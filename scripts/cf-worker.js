@@ -9,12 +9,14 @@
  *     If PowerShell (irm / pwsh) -> returns install.ps1
  *     If Browsers -> redirects to GitHub repo
  *
+ * Scripts are served from the latest release's assets, so unreleased commits on main never reach users.
+ *
  * Caching:
  * - Cloudflare cache is used to cache the upstream scripts for 5 minutes (300 seconds)
  */
 
 const REPO = "itskdhere/envlock";
-const RAW_SCRIPTS_BASE = `https://raw.githubusercontent.com/${REPO}/main/scripts`;
+const SCRIPTS_BASE = `https://github.com/${REPO}/releases/latest/download`;
 const DOCS_URL = `https://github.com/${REPO}#readme`;
 
 export default {
@@ -28,13 +30,13 @@ export default {
     // 1. Direct Script Endpoints
     if (path === "/install.sh" || path === "/sh") {
       return fetchScript(
-        `${RAW_SCRIPTS_BASE}/install.sh`,
+        `${SCRIPTS_BASE}/install.sh`,
         "text/x-shellscript",
       );
     }
 
     if (path === "/install.ps1" || path === "/ps1") {
-      return fetchScript(`${RAW_SCRIPTS_BASE}/install.ps1`, "text/plain");
+      return fetchScript(`${SCRIPTS_BASE}/install.ps1`, "text/plain");
     }
 
     // 2. Dynamic Routes: Root ("/") and "/install" (curl / irm / browser detection)
@@ -42,7 +44,7 @@ export default {
       // Terminal clients: curl or wget
       if (userAgent.includes("curl") || userAgent.includes("wget")) {
         return fetchScript(
-          `${RAW_SCRIPTS_BASE}/install.sh`,
+          `${SCRIPTS_BASE}/install.sh`,
           "text/x-shellscript",
         );
       }
@@ -53,7 +55,7 @@ export default {
         userAgent.includes("pwsh") ||
         userAgent.includes("winhttp")
       ) {
-        return fetchScript(`${RAW_SCRIPTS_BASE}/install.ps1`, "text/plain");
+        return fetchScript(`${SCRIPTS_BASE}/install.ps1`, "text/plain");
       }
 
       // Browsers -> redirect to GitHub repo
