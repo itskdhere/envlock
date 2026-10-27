@@ -37,11 +37,11 @@ func GlobalKeyPaths() (privPath string, pubPath string, err error) {
 func ResolvePrivateKey(keyFileFlag string) (string, error) {
 	if keyFileFlag != "" {
 		if keyFileFlag == "-" {
-			data, err := io.ReadAll(os.Stdin)
+			line, err := readLine(os.Stdin)
 			if err != nil {
 				return "", fmt.Errorf("failed to read private key from stdin: %w", err)
 			}
-			return strings.TrimSpace(string(data)), nil
+			return strings.TrimSpace(line), nil
 		}
 		data, err := os.ReadFile(keyFileFlag)
 		if err != nil {
@@ -74,6 +74,27 @@ func ResolvePrivateKey(keyFileFlag string) (string, error) {
 	}
 
 	return "", errors.New("no private key found. Set ENVLOCK_KEY, use --key-file, or run 'envlock keygen'")
+}
+
+// readLine reads a byte at a time so the rest of stdin stays unread for the command or a prompt.
+func readLine(r io.Reader) (string, error) {
+	var line []byte
+	b := make([]byte, 1)
+	for {
+		n, err := r.Read(b)
+		if n == 1 {
+			if b[0] == '\n' {
+				return string(line), nil
+			}
+			line = append(line, b[0])
+		}
+		if err == io.EOF {
+			return string(line), nil
+		}
+		if err != nil {
+			return "", err
+		}
+	}
 }
 
 func loadPrivateKey() (*ecdh.PrivateKey, error) {

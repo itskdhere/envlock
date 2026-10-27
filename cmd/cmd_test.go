@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	osexec "os/exec"
 	"path/filepath"
@@ -290,6 +291,27 @@ func TestKeyResolutionWithEnvVar(t *testing.T) {
 	_ = os.WriteFile(keyFile, []byte(crypto.FormatPrivateKey(filePriv)), 0600)
 	if resolved, _ := ResolvePrivateKey(keyFile); resolved != crypto.FormatPrivateKey(filePriv) {
 		t.Fatal("--key-file must take precedence over ENVLOCK_KEY")
+	}
+}
+
+func TestKeyFromStdinLeavesRestUnread(t *testing.T) {
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("pipe failed: %v", err)
+	}
+	stdin := os.Stdin
+	os.Stdin = r
+	t.Cleanup(func() { os.Stdin = stdin })
+
+	priv, _, _ := crypto.GenerateKeyPair()
+	fmt.Fprintf(w, "%s\ny\n", crypto.FormatPrivateKey(priv))
+	w.Close()
+
+	if key, err := ResolvePrivateKey("-"); err != nil || key != crypto.FormatPrivateKey(priv) {
+		t.Fatalf("ResolvePrivateKey(\"-\") = %q, %v", key, err)
+	}
+	if rest, _ := io.ReadAll(r); string(rest) != "y\n" {
+		t.Fatalf("stdin after the key = %q, want %q", rest, "y\n")
 	}
 }
 
