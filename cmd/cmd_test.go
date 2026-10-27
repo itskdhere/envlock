@@ -27,17 +27,21 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestEndToEndFidelity(t *testing.T) {
-	tempDir := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("failed to get current dir: %v", err)
-	}
-	defer os.Chdir(origDir)
+// inTempProject runs the test in a fresh directory with default flags and no key in the environment.
+func inTempProject(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	t.Chdir(dir)
+	t.Setenv("ENVLOCK_KEY", "")
+	t.Setenv("ENVLOCK_KEY_PATH", "")
+	flagEnv, flagFile, flagKeyFile = "", "", ""
+	flagKeygenGlobal, flagKeygenOut, flagKeygenStdout, flagKeygenForce = false, "", false, false
+	flagPullForce, flagRunNoOverride = false, false
+	return dir
+}
 
-	if err := os.Chdir(tempDir); err != nil {
-		t.Fatalf("failed to change dir: %v", err)
-	}
+func TestEndToEndFidelity(t *testing.T) {
+	tempDir := inTempProject(t)
 
 	// 1. Complex raw .env data preserving whitespace, comments, multiline, unicode, and quoting
 	originalEnv := []byte(`# Core Configuration 🚀
@@ -66,10 +70,6 @@ JSON_PAYLOAD={"key": "value", "active": true}
 	}
 
 	// 2. Run keygen
-	flagKeygenGlobal = false
-	flagKeygenOut = ""
-	flagKeygenStdout = false
-	flagKeygenForce = false
 	if err := keygenCmd.RunE(keygenCmd, nil); err != nil {
 		t.Fatalf("keygen failed: %v", err)
 	}
@@ -83,8 +83,6 @@ JSON_PAYLOAD={"key": "value", "active": true}
 	}
 
 	// 3. Run push
-	flagEnv = ""
-	flagFile = ""
 	if err := pushCmd.RunE(pushCmd, nil); err != nil {
 		t.Fatalf("push failed: %v", err)
 	}
@@ -104,8 +102,6 @@ JSON_PAYLOAD={"key": "value", "active": true}
 	}
 
 	// 5. Run pull
-	flagPullForce = false
-	flagKeyFile = ""
 	if err := pullCmd.RunE(pullCmd, nil); err != nil {
 		t.Fatalf("pull failed: %v", err)
 	}
@@ -122,13 +118,9 @@ JSON_PAYLOAD={"key": "value", "active": true}
 }
 
 func TestMultiEnvironmentWorkflow(t *testing.T) {
-	tempDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	defer os.Chdir(origDir)
-	_ = os.Chdir(tempDir)
+	tempDir := inTempProject(t)
 
 	// Generate key
-	flagKeygenForce = true
 	_ = keygenCmd.RunE(keygenCmd, nil)
 
 	// Create .env.staging
@@ -139,7 +131,6 @@ func TestMultiEnvironmentWorkflow(t *testing.T) {
 
 	// Push staging
 	flagEnv = "staging"
-	flagFile = ""
 	if err := pushCmd.RunE(pushCmd, nil); err != nil {
 		t.Fatalf("push staging failed: %v", err)
 	}
@@ -165,10 +156,7 @@ func TestMultiEnvironmentWorkflow(t *testing.T) {
 }
 
 func TestPullOverwriteProtection(t *testing.T) {
-	tempDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	defer os.Chdir(origDir)
-	_ = os.Chdir(tempDir)
+	tempDir := inTempProject(t)
 
 	_ = keygenCmd.RunE(keygenCmd, nil)
 
@@ -176,8 +164,6 @@ func TestPullOverwriteProtection(t *testing.T) {
 	envPath := filepath.Join(tempDir, ".env")
 	_ = env.WriteEnvFile(envPath, initialContent)
 
-	flagEnv = ""
-	flagFile = ""
 	if err := pushCmd.RunE(pushCmd, nil); err != nil {
 		t.Fatalf("push failed: %v", err)
 	}
@@ -199,11 +185,7 @@ func TestPullOverwriteProtection(t *testing.T) {
 }
 
 func TestRecipientListIsAuthenticated(t *testing.T) {
-	tempDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	defer os.Chdir(origDir)
-	_ = os.Chdir(tempDir)
-	flagEnv, flagFile, flagKeyFile = "", "", ""
+	tempDir := inTempProject(t)
 
 	priv, _, _ := crypto.GenerateKeyPair()
 	t.Setenv("ENVLOCK_KEY", crypto.FormatPrivateKey(priv))
@@ -229,11 +211,7 @@ func TestRecipientListIsAuthenticated(t *testing.T) {
 }
 
 func TestFirstPushEncryptsForOwnKey(t *testing.T) {
-	tempDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	defer os.Chdir(origDir)
-	_ = os.Chdir(tempDir)
-	flagEnv, flagFile, flagKeyFile = "", "", ""
+	tempDir := inTempProject(t)
 
 	priv, _, _ := crypto.GenerateKeyPair()
 	_, strayPub, _ := crypto.GenerateKeyPair()
@@ -249,11 +227,7 @@ func TestFirstPushEncryptsForOwnKey(t *testing.T) {
 }
 
 func TestExistingVaultIsNotClobbered(t *testing.T) {
-	tempDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	defer os.Chdir(origDir)
-	_ = os.Chdir(tempDir)
-	flagEnv, flagFile, flagKeyFile = "", "", ""
+	tempDir := inTempProject(t)
 
 	priv, _, _ := crypto.GenerateKeyPair()
 	t.Setenv("ENVLOCK_KEY", crypto.FormatPrivateKey(priv))
@@ -320,12 +294,8 @@ func TestKeyResolutionWithEnvVar(t *testing.T) {
 }
 
 func TestRunExitCodesAndKeyStripping(t *testing.T) {
-	tempDir := t.TempDir()
-	origDir, _ := os.Getwd()
-	defer os.Chdir(origDir)
-	_ = os.Chdir(tempDir)
+	tempDir := inTempProject(t)
 
-	flagEnv, flagFile, flagKeyFile = "", "", ""
 	var exitErr *exitError
 	if err := runCmd.RunE(runCmd, []string{"envlock-no-such-cmd"}); !errors.As(err, &exitErr) || exitErr.code != 125 {
 		t.Fatalf("missing vault: expected exit 125, got %v", err)
