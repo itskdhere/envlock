@@ -9,15 +9,11 @@ DIST_DIR ?= dist
 ifeq ($(OS),Windows_NT)
 SHELL := cmd.exe
 EXE := .exe
-DATE ?= $(shell powershell -NoProfile -Command "[DateTime]::UtcNow.ToString('s')+'Z'")
-else
-DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 endif
 
 LDFLAGS := -s -w \
 	-X github.com/itskdhere/envlock/cmd.Version=$(VERSION) \
-	-X github.com/itskdhere/envlock/cmd.Commit=$(COMMIT) \
-	-X github.com/itskdhere/envlock/cmd.Date=$(DATE)
+	-X github.com/itskdhere/envlock/cmd.Commit=$(COMMIT)
 
 .PHONY: all build test release clean
 

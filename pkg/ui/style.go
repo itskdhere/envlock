@@ -9,16 +9,9 @@ import (
 
 var (
 	// Brand colors
-	PrimaryColor   = lipgloss.Color("#7D56F4")
-	SuccessColor   = lipgloss.Color("#04B575")
-	WarningColor   = lipgloss.Color("#FFB800")
-	DangerColor    = lipgloss.Color("#FF4E64")
-	SubtleColor    = lipgloss.Color("#6C7086")
-	HighlightColor = lipgloss.Color("#38BDF8")
-
-	// Base styles
-	BoldText = lipgloss.NewStyle().Bold(true)
-	DimText  = lipgloss.NewStyle().Foreground(SubtleColor)
+	PrimaryColor = lipgloss.Color("#7D56F4")
+	SuccessColor = lipgloss.Color("#04B575")
+	WarningColor = lipgloss.Color("#FFB800")
 
 	// Badge styles
 	SuccessBadge = lipgloss.NewStyle().
@@ -31,18 +24,6 @@ var (
 			Bold(true).
 			Foreground(lipgloss.Color("#000000")).
 			Background(WarningColor).
-			Padding(0, 1)
-
-	DangerBadge = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#FFFFFF")).
-			Background(DangerColor).
-			Padding(0, 1)
-
-	InfoBadge = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#FFFFFF")).
-			Background(PrimaryColor).
 			Padding(0, 1)
 
 	// Card/Banner styles
@@ -63,18 +44,6 @@ func Success(format string, a ...interface{}) string {
 func Warning(format string, a ...interface{}) string {
 	msg := fmt.Sprintf(format, a...)
 	return fmt.Sprintf("%s %s", WarningBadge.Render("WARNING"), msg)
-}
-
-// Danger formats an error message with a badge.
-func Danger(format string, a ...interface{}) string {
-	msg := fmt.Sprintf(format, a...)
-	return fmt.Sprintf("%s %s", DangerBadge.Render("ERROR"), msg)
-}
-
-// Info formats an informational message with a badge.
-func Info(format string, a ...interface{}) string {
-	msg := fmt.Sprintf(format, a...)
-	return fmt.Sprintf("%s %s", InfoBadge.Render("INFO"), msg)
 }
 
 // Banner renders an emphasized box with a title and multi-line body.
