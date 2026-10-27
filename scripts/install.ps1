@@ -155,14 +155,17 @@ try {
     Write-Host ""
 
     # 5. Add to User PATH if not present
-    $UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
+    # Use the raw registry value so entries like %USERPROFILE%\bin stay unexpanded.
+    $UserPath = (Get-Item -Path 'HKCU:\Environment').GetValue('Path', '', 'DoNotExpandEnvironmentNames')
     $Paths = if ($UserPath) { $UserPath -split ';' } else { @() }
     $NormalizedInstallDir = $InstallDir.TrimEnd('\')
-    $AlreadyInPath = $Paths | Where-Object { $_.TrimEnd('\') -ieq $NormalizedInstallDir }
+    $AlreadyInPath = $Paths | Where-Object { [Environment]::ExpandEnvironmentVariables($_).TrimEnd('\') -ieq $NormalizedInstallDir }
 
     if (-not $AlreadyInPath) {
         $NewPath = (($Paths + $InstallDir) -join ';').Trim(';')
-        [Environment]::SetEnvironmentVariable("Path", $NewPath, "User")
+        Set-ItemProperty -Path 'HKCU:\Environment' -Name Path -Value $NewPath -Type ExpandString
+        # The registry write alone doesn't notify open programs; this .NET call broadcasts WM_SETTINGCHANGE.
+        [Environment]::SetEnvironmentVariable('ENVLOCK_PATH_REFRESH', $null, 'User')
         $env:Path = "$env:Path;$InstallDir"
         Write-Host "Notice: Added $InstallDir to your User PATH!" -ForegroundColor Yellow
         Write-Host "You can now run 'envlock' or 'el' from any terminal." -ForegroundColor Yellow
