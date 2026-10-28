@@ -57,6 +57,8 @@ cannot be executed, 127 if it is not found.`,
 			return &exitError{125, fmt.Errorf("failed to parse decrypted %s: %w", paths.LockFile, err)}
 		}
 
+		// exec.Run never returns on success.
+		printUpdateNotice()
 		switch err := exec.Run(args[0], args[1:], vars, !flagRunNoOverride); {
 		case errors.Is(err, osexec.ErrNotFound):
 			return &exitError{127, err}

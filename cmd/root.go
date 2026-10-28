@@ -36,7 +36,9 @@ Protected by Curve25519 (X25519 ECDH) asymmetric envelope encryption and AES-256
 
 // Execute runs the CLI and returns the process exit code.
 func Execute() int {
+	startUpdateCheck()
 	err := rootCmd.Execute()
+	printUpdateNotice()
 	var exitErr *exitError
 	if errors.As(err, &exitErr) {
 		return exitErr.code

@@ -45,6 +45,8 @@ go install github.com/itskdhere/envlock@latest
 
 To install a specific release or change the install location, set `ENVLOCK_VERSION` (e.g. `v0.4.0`) or `ENVLOCK_INSTALL_DIR`. With the shell installer, put them right before `bash`: `curl -fsSL https://envlock.itskdhere.com | ENVLOCK_VERSION=v0.4.0 bash`.
 
+EnvLock checks GitHub for a new release at most every 6 hours and prints a one-line notice when one is out. That single HTTPS request to github.com is the only network call EnvLock makes. It is skipped in CI and when stderr isn't a terminal. Set `ENVLOCK_NO_UPDATE_CHECK=1` to turn it off.
+
 ## 🛠️ Quick Start
 
 ### 1. Initialize your repository

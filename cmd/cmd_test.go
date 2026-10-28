@@ -349,6 +349,28 @@ func TestRunExitCodesAndKeyStripping(t *testing.T) {
 	}
 }
 
+func TestNewerVersion(t *testing.T) {
+	cases := []struct {
+		latest, current string
+		want            bool
+	}{
+		{"v0.5.0", "0.4.0", true},
+		{"v0.10.0", "v0.9.1", true},
+		{"v1.0.0", "0.99.99", true},
+		{"v0.4.0", "0.4.0", false},
+		{"v0.4.0", "0.5.0", false},
+		{"v0.5.0", "v0.4.0-3-g8ea25f6", false},
+		{"", "0.4.0", false},
+		{"v0.5.0\x1b[2J", "0.4.0", false},
+		{"v+1.0.0", "0.4.0", false},
+	}
+	for _, c := range cases {
+		if got := newerVersion(c.latest, c.current); got != c.want {
+			t.Errorf("newerVersion(%q, %q) = %v, want %v", c.latest, c.current, got, c.want)
+		}
+	}
+}
+
 func TestCommandFlagMerging(t *testing.T) {
 	commands := [][]string{
 		{"--help"},
