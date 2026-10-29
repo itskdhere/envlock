@@ -14,8 +14,9 @@ import (
 )
 
 var recipientCmd = &cobra.Command{
-	Use:   "recipient",
-	Short: "List, add, or remove the public keys that can decrypt env.lock",
+	Use:     "recipient",
+	Aliases: []string{"rec"},
+	Short:   "List, add, or remove the public keys that can decrypt env.lock",
 }
 
 var recipientListCmd = &cobra.Command{

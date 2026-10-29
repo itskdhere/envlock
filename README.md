@@ -151,7 +151,7 @@ el pull -e prod
 | `envlock push`    | `el push`, `enc` | Encrypts raw `.env` bytes into `env.lock` for all authorized recipients                   |
 | `envlock pull`    | `el pull`, `dec` | Decrypts `env.lock` with uncommitted changes warning/prompt (`-y` / `--force`)            |
 | `envlock run`     | `el run`         | Runs `-- <command>` with vault variables injected in memory (`--no-override`)             |
-| `envlock recipient` | `el recipient` | Lists (`ls`), adds (`add <pubkey>`), or removes (`rm <pubkey>`) authorized public keys    |
+| `envlock recipient` | `el recipient`, `rec` | Lists (`ls`), adds (`add <pubkey>`), or removes (`rm <pubkey>`) authorized public keys    |
 | `envlock version` | `el version`     | Prints semantic version, commit hash, and target architecture                             |
 
 ## 🔒 Security & Verification
