@@ -116,6 +116,15 @@ el recipient rm el_pub_...       # revoke a teammate
 
 Each `push`, `add`, and `rm` rewrites the whole file, so changes to `env.lock` on two branches can't be merged: Git makes you keep one side, and keeping the side without an `rm` restores the removed key. `pull` and `run` warn about the restored key on any machine that has encrypted this `env.lock` before, and `push`, `add`, and `rm` ask before encrypting for it again, but pull the latest `env.lock` before running these commands. `rm` also asks before removing your own key.
 
+To make sure no one can merge an `env.lock` change without approval, give the lock files owners on GitHub (or the equivalent on your Git host) with a `.github/CODEOWNERS` file:
+
+```
+env.lock      @your-org/secrets-admins
+env.*.lock    @your-org/secrets-admins
+```
+
+Then protect your default branch with **Require a pull request before merging** and **Require review from Code Owners**. GitHub then blocks merging any change to `env.lock`, including a forged one or a merge that restores a removed key, until one of those owners approves it.
+
 ## ⚙️ CI/CD (Zero-Disk)
 
 Store your private key as a CI secret and expose it as `ENVLOCK_KEY`:
@@ -148,15 +157,15 @@ el pull -e prod
 
 ## 📖 Command Reference
 
-| Command           | Alias            | Description                                                                               |
-| :---------------- | :--------------- | :---------------------------------------------------------------------------------------- |
-| `envlock init`    | `el init`        | Prepares project safety defaults (`.gitignore`, `.gitattributes`, sample `.env`)          |
-| `envlock keygen`  | `el keygen`      | Generates a Curve25519 X25519 keypair (`--global`, `--out`, `--stdout`, `-y` / `--force`) |
-| `envlock push`    | `el push`, `enc` | Encrypts raw `.env` bytes into `env.lock` for all authorized recipients                   |
-| `envlock pull`    | `el pull`, `dec` | Decrypts `env.lock` with uncommitted changes warning/prompt (`-y` / `--force`)            |
-| `envlock run`     | `el run`         | Runs `-- <command>` with vault variables injected in memory (`--no-override`)             |
+| Command             | Alias                 | Description                                                                               |
+| :------------------ | :-------------------- | :---------------------------------------------------------------------------------------- |
+| `envlock init`      | `el init`             | Prepares project safety defaults (`.gitignore`, `.gitattributes`, sample `.env`)          |
+| `envlock keygen`    | `el keygen`           | Generates a Curve25519 X25519 keypair (`--global`, `--out`, `--stdout`, `-y` / `--force`) |
+| `envlock push`      | `el push`, `enc`      | Encrypts raw `.env` bytes into `env.lock` for all authorized recipients                   |
+| `envlock pull`      | `el pull`, `dec`      | Decrypts `env.lock` with uncommitted changes warning/prompt (`-y` / `--force`)            |
+| `envlock run`       | `el run`              | Runs `-- <command>` with vault variables injected in memory (`--no-override`)             |
 | `envlock recipient` | `el recipient`, `rec` | Lists (`ls`), adds (`add <pubkey>`), or removes (`rm <pubkey>`) authorized public keys    |
-| `envlock version` | `el version`     | Prints semantic version, commit hash, and target architecture                             |
+| `envlock version`   | `el version`          | Prints semantic version, commit hash, and target architecture                             |
 
 ## 🔒 Security & Verification
 
