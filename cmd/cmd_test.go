@@ -373,6 +373,28 @@ func TestPushFlagsARestoredRecipient(t *testing.T) {
 	}
 }
 
+func TestRecipientCommandsFollowEnvFlag(t *testing.T) {
+	inTempProject(t)
+
+	owner, _, _ := crypto.GenerateKeyPair()
+	_, matePub, _ := crypto.GenerateKeyPair()
+	t.Setenv("ENVLOCK_KEY", crypto.FormatPrivateKey(owner))
+	flagEnv = "prod"
+	_ = env.WriteEnvFile(".env.prod", []byte("FOO=bar\n"))
+	if err := pushCmd.RunE(pushCmd, nil); err != nil {
+		t.Fatalf("push failed: %v", err)
+	}
+	if err := recipientAddCmd.RunE(recipientAddCmd, []string{crypto.FormatPublicKey(matePub)}); err != nil {
+		t.Fatalf("add failed: %v", err)
+	}
+	if v, err := vault.ReadVault("env.prod.lock"); err != nil || len(v.Recipients) != 2 {
+		t.Fatalf("add must re-encrypt env.prod.lock: %v", err)
+	}
+	if _, err := os.Stat("env.lock"); !os.IsNotExist(err) {
+		t.Fatal("-e prod must not touch env.lock")
+	}
+}
+
 func TestRemovingYourOwnKeyAsks(t *testing.T) {
 	inTempProject(t)
 
