@@ -31,12 +31,7 @@ Exit codes: the command's own, or 125 if envlock fails, 126 if the command
 cannot be executed, 127 if it is not found.`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cwd, err := os.Getwd()
-		if err != nil {
-			return &exitError{125, fmt.Errorf("failed to get current working directory: %w", err)}
-		}
-
-		paths := env.ResolvePaths(cwd, flagEnv, flagFile)
+		paths := env.ResolvePaths(".", flagEnv, flagFile)
 
 		decrypted, err := decryptVault(paths.LockFile)
 		if err != nil {

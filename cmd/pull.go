@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/itskdhere/envlock/pkg/crypto"
 	"github.com/itskdhere/envlock/pkg/env"
@@ -27,12 +26,7 @@ var pullCmd = &cobra.Command{
 Includes overwrite protection: if local .env has uncommitted changes, you will be prompted
 before overwriting unless --force / -y is supplied.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cwd, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("failed to get current working directory: %w", err)
-		}
-
-		paths := env.ResolvePaths(cwd, flagEnv, flagFile)
+		paths := env.ResolvePaths(".", flagEnv, flagFile)
 
 		decrypted, err := decryptVault(paths.LockFile)
 		if err != nil {

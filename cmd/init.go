@@ -17,14 +17,9 @@ var initCmd = &cobra.Command{
 2. Appending .env, .env.*, *.key, and *.pub to .gitignore, while exempting .env.example and lock files (!env.lock, !env.*.lock).
 3. Appending env.lock and env.*.lock merge=binary rules to .gitattributes to prevent Git merge conflict corruption.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cwd, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("failed to get current working directory: %w", err)
-		}
+		paths := env.ResolvePaths(".", flagEnv, flagFile)
 
-		paths := env.ResolvePaths(cwd, flagEnv, flagFile)
-
-		_, err = os.Stat(paths.LockFile)
+		_, err := os.Stat(paths.LockFile)
 		hasVault := err == nil
 
 		createdEnv := false
@@ -34,12 +29,12 @@ var initCmd = &cobra.Command{
 			}
 		}
 
-		addedGitignore, err := env.EnsureGitignore(cwd)
+		addedGitignore, err := env.EnsureGitignore(".")
 		if err != nil {
 			return fmt.Errorf("failed to update .gitignore: %w", err)
 		}
 
-		addedGitattributes, err := env.EnsureGitattributes(cwd)
+		addedGitattributes, err := env.EnsureGitattributes(".")
 		if err != nil {
 			return fmt.Errorf("failed to update .gitattributes: %w", err)
 		}

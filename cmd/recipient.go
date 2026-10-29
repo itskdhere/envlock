@@ -40,12 +40,7 @@ var recipientListCmd = &cobra.Command{
 No private key is needed. A hand-edited list is only caught when the vault is decrypted.`,
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cwd, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("failed to get current working directory: %w", err)
-		}
-
-		lockFile := env.ResolvePaths(cwd, flagEnv, flagFile).LockFile
+		lockFile := env.ResolvePaths(".", flagEnv, flagFile).LockFile
 		envelope, err := vault.ReadVault(lockFile)
 		if err != nil {
 			return fmt.Errorf("failed to read vault %s: %w", lockFile, err)
@@ -181,6 +176,10 @@ func knownRecipientsFile(lockFile string) string {
 	if err != nil {
 		return ""
 	}
+	lockFile, err = filepath.Abs(lockFile)
+	if err != nil {
+		return ""
+	}
 	// Terminals disagree on drive letter case.
 	if runtime.GOOS == "windows" {
 		lockFile = strings.ToLower(lockFile)
@@ -190,12 +189,7 @@ func knownRecipientsFile(lockFile string) string {
 }
 
 func editRecipients(edit func(keys []string, self string) ([]string, error)) (lockFile string, err error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("failed to get current working directory: %w", err)
-	}
-
-	lockFile = env.ResolvePaths(cwd, flagEnv, flagFile).LockFile
+	lockFile = env.ResolvePaths(".", flagEnv, flagFile).LockFile
 	envelope, err := vault.ReadVault(lockFile)
 	if err != nil {
 		return "", fmt.Errorf("failed to read vault %s: %w", lockFile, err)

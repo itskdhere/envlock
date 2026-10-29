@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"os"
 
 	"github.com/itskdhere/envlock/pkg/crypto"
 	"github.com/itskdhere/envlock/pkg/env"
@@ -25,12 +24,7 @@ Preserves 100% of formatting, comments, blank lines, and custom quotes.
 Re-encrypts for the recipients of the existing env.lock, which your key must be able to
 decrypt, or encrypts for your own key on the initial push.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cwd, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("failed to get current working directory: %w", err)
-		}
-
-		paths := env.ResolvePaths(cwd, flagEnv, flagFile)
+		paths := env.ResolvePaths(".", flagEnv, flagFile)
 
 		rawEnv, err := env.ReadEnvFile(paths.EnvFile)
 		if err != nil {
