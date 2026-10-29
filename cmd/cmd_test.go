@@ -9,6 +9,7 @@ import (
 	"os"
 	osexec "os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/itskdhere/envlock/pkg/crypto"
@@ -283,6 +284,37 @@ func TestRecipientAddRemove(t *testing.T) {
 	}
 	if err := recipientAddCmd.RunE(recipientAddCmd, []string{crypto.FormatPublicKey(owner.PublicKey())}); err == nil {
 		t.Fatal("a non-recipient must not be able to add keys")
+	}
+}
+
+func TestRemoveDropsEveryCopyOfAKey(t *testing.T) {
+	inTempProject(t)
+
+	owner, _, _ := crypto.GenerateKeyPair()
+	mal, malPub, _ := crypto.GenerateKeyPair()
+	malPubStr := crypto.FormatPublicKey(malPub)
+	malUpper := crypto.PubKeyPrefix + strings.ToUpper(strings.TrimPrefix(malPubStr, crypto.PubKeyPrefix))
+
+	keys := []string{crypto.FormatPublicKey(owner.PublicKey()), malPubStr, malPubStr, malUpper}
+	if err := sealVault("env.lock", []byte("FOO=bar\n"), keys); err != nil {
+		t.Fatalf("seal failed: %v", err)
+	}
+
+	t.Setenv("ENVLOCK_KEY", crypto.FormatPrivateKey(owner))
+	if err := recipientRemoveCmd.RunE(recipientRemoveCmd, []string{malPubStr}); err != nil {
+		t.Fatalf("remove failed: %v", err)
+	}
+	after, _ := vault.ReadVault("env.lock")
+	for _, r := range after.Recipients {
+		eph, _ := crypto.ParsePublicKey(r.EphemeralPubKey)
+		if _, err := crypto.UnwrapDEK(r.WrappedDEK, eph, mal); err == nil {
+			t.Fatalf("removed key still unwraps the DEK via %q", r.PubKey)
+		}
+	}
+
+	rootCmd.SetArgs([]string{"recipient", "remvoe", malPubStr})
+	if err := rootCmd.Execute(); err == nil {
+		t.Fatal("a mistyped recipient subcommand must fail")
 	}
 }
 

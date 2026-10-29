@@ -47,12 +47,9 @@ decrypt, or encrypts for your own key on the initial push.`,
 			}
 			crypto.WipeBytes(decrypted)
 
-			seen := make(map[string]bool)
-			for _, rec := range existingVault.Recipients {
-				if !seen[rec.PubKey] {
-					seen[rec.PubKey] = true
-					recipientPubKeys = append(recipientPubKeys, rec.PubKey)
-				}
+			recipientPubKeys, err = uniqueRecipients(existingVault)
+			if err != nil {
+				return err
 			}
 		case errors.Is(err, fs.ErrNotExist):
 			privKey, err := loadPrivateKey()

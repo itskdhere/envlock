@@ -17,6 +17,11 @@ var recipientCmd = &cobra.Command{
 	Use:     "recipient",
 	Aliases: []string{"rec"},
 	Short:   "List, add, or remove the public keys that can decrypt env.lock",
+	// Without RunE, cobra prints help and exits 0 on a mistyped subcommand.
+	Args: cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
+	},
 }
 
 var recipientListCmd = &cobra.Command{
@@ -105,6 +110,20 @@ func parseRecipient(arg string) (string, error) {
 	return crypto.FormatPublicKey(pub), nil
 }
 
+func uniqueRecipients(envelope *vault.VaultEnvelope) ([]string, error) {
+	var keys []string
+	for _, k := range envelope.PubKeys() {
+		key, err := parseRecipient(k)
+		if err != nil {
+			return nil, err
+		}
+		if !slices.Contains(keys, key) {
+			keys = append(keys, key)
+		}
+	}
+	return keys, nil
+}
+
 func editRecipients(edit func(keys []string) ([]string, error)) (lockFile string, err error) {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -122,7 +141,11 @@ func editRecipients(edit func(keys []string) ([]string, error)) (lockFile string
 	}
 	defer crypto.WipeBytes(plaintext)
 
-	keys, err := edit(envelope.PubKeys())
+	keys, err := uniqueRecipients(envelope)
+	if err != nil {
+		return "", err
+	}
+	keys, err = edit(keys)
 	if err != nil {
 		return "", err
 	}
