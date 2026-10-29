@@ -65,7 +65,7 @@ var initCmd = &cobra.Command{
 		lines = append(lines, "Next steps:")
 		if hasVault {
 			lines = append(lines, "  1. Decrypt your secrets:  envlock pull")
-			lines = append(lines, "     No access yet? Run 'envlock keygen' and ask a teammate to add your envlock.pub")
+			lines = append(lines, "     No access yet? Run 'envlock keygen' and ask a teammate to run 'envlock recipient add' with your envlock.pub key")
 		} else {
 			lines = append(lines, "  1. Generate your identity key:  envlock keygen")
 			lines = append(lines, "  2. Encrypt your secrets:        envlock push")

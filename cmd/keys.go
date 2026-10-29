@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/itskdhere/envlock/pkg/crypto"
+	"github.com/mattn/go-isatty"
 )
 
 // DefaultKeyDir returns the OS user config directory for envlock keys.
@@ -101,6 +102,10 @@ func readLine(r io.Reader) (string, error) {
 func confirm(question string) bool {
 	fmt.Print(question + " [y/N]: ")
 	answer, _ := readLine(os.Stdin)
+	// A piped answer isn't echoed, so the next output would join the prompt line.
+	if fd := os.Stdin.Fd(); !isatty.IsTerminal(fd) && !isatty.IsCygwinTerminal(fd) {
+		fmt.Println()
+	}
 	answer = strings.ToLower(strings.TrimSpace(answer))
 	return answer == "y" || answer == "yes"
 }
