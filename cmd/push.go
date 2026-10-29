@@ -64,50 +64,57 @@ decrypt, or encrypts for your own key on the initial push.`,
 			return fmt.Errorf("refusing to overwrite %s: %w", paths.LockFile, err)
 		}
 
-		dek, err := crypto.GenerateDEK()
-		if err != nil {
-			return fmt.Errorf("failed to generate DEK: %w", err)
-		}
-		defer crypto.WipeBytes(dek)
-
-		recipientEntries := make([]vault.RecipientEntry, 0, len(recipientPubKeys))
-		for _, pubKeyStr := range recipientPubKeys {
-			pubKey, err := crypto.ParsePublicKey(pubKeyStr)
-			if err != nil {
-				return fmt.Errorf("invalid recipient public key %q: %w", pubKeyStr, err)
-			}
-
-			ephPub, wrappedDEKHex, err := crypto.WrapDEK(dek, pubKey)
-			if err != nil {
-				return fmt.Errorf("failed to wrap DEK for recipient %s: %w", pubKeyStr, err)
-			}
-
-			recipientEntries = append(recipientEntries, vault.RecipientEntry{
-				PubKey:          pubKeyStr,
-				EphemeralPubKey: crypto.FormatPublicKey(ephPub),
-				WrappedDEK:      wrappedDEKHex,
-			})
+		if err := sealVault(paths.LockFile, rawEnv, recipientPubKeys); err != nil {
+			return err
 		}
 
-		envelope := &vault.VaultEnvelope{
-			Version:    vault.VaultVersion,
-			Cipher:     vault.CipherAES256GCM,
-			Recipients: recipientEntries,
-		}
-		iv, ciphertext, err := crypto.EncryptPayload(rawEnv, dek, envelope.PayloadAAD())
-		if err != nil {
-			return fmt.Errorf("failed to encrypt payload: %w", err)
-		}
-		envelope.IV = hex.EncodeToString(iv)
-		envelope.Ciphertext = hex.EncodeToString(ciphertext)
-
-		if err := vault.WriteVault(paths.LockFile, envelope); err != nil {
-			return fmt.Errorf("failed to write vault file %s: %w", paths.LockFile, err)
-		}
-
-		fmt.Println(ui.Success("Encrypted %s -> %s (%d recipient(s))", paths.EnvFile, paths.LockFile, len(recipientEntries)))
+		fmt.Println(ui.Success("Encrypted %s -> %s (%d recipient(s))", paths.EnvFile, paths.LockFile, len(recipientPubKeys)))
 		return nil
 	},
+}
+
+func sealVault(lockFile string, plaintext []byte, pubKeys []string) error {
+	dek, err := crypto.GenerateDEK()
+	if err != nil {
+		return fmt.Errorf("failed to generate DEK: %w", err)
+	}
+	defer crypto.WipeBytes(dek)
+
+	recipientEntries := make([]vault.RecipientEntry, 0, len(pubKeys))
+	for _, pubKeyStr := range pubKeys {
+		pubKey, err := crypto.ParsePublicKey(pubKeyStr)
+		if err != nil {
+			return fmt.Errorf("invalid recipient public key %q: %w", pubKeyStr, err)
+		}
+
+		ephPub, wrappedDEKHex, err := crypto.WrapDEK(dek, pubKey)
+		if err != nil {
+			return fmt.Errorf("failed to wrap DEK for recipient %s: %w", pubKeyStr, err)
+		}
+
+		recipientEntries = append(recipientEntries, vault.RecipientEntry{
+			PubKey:          pubKeyStr,
+			EphemeralPubKey: crypto.FormatPublicKey(ephPub),
+			WrappedDEK:      wrappedDEKHex,
+		})
+	}
+
+	envelope := &vault.VaultEnvelope{
+		Version:    vault.VaultVersion,
+		Cipher:     vault.CipherAES256GCM,
+		Recipients: recipientEntries,
+	}
+	iv, ciphertext, err := crypto.EncryptPayload(plaintext, dek, envelope.PayloadAAD())
+	if err != nil {
+		return fmt.Errorf("failed to encrypt payload: %w", err)
+	}
+	envelope.IV = hex.EncodeToString(iv)
+	envelope.Ciphertext = hex.EncodeToString(ciphertext)
+
+	if err := vault.WriteVault(lockFile, envelope); err != nil {
+		return fmt.Errorf("failed to write vault file %s: %w", lockFile, err)
+	}
+	return nil
 }
 
 func init() {
