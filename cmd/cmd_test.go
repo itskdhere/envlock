@@ -356,6 +356,15 @@ func TestPushFlagsARestoredRecipient(t *testing.T) {
 	}
 
 	_ = os.WriteFile("env.lock", withMate, 0644)
+	stderr := os.Stderr
+	r, w, _ := os.Pipe()
+	os.Stderr = w
+	_, err := decryptVault("env.lock")
+	os.Stderr = stderr
+	w.Close()
+	if warning, _ := io.ReadAll(r); err != nil || !bytes.Contains(warning, []byte(matePubStr)) {
+		t.Fatalf("pull must warn about a removed key that came back: %v %q", err, warning)
+	}
 	withStdin(t, "n\n")
 	if err := pushCmd.RunE(pushCmd, nil); err == nil {
 		t.Fatal("push must not silently re-encrypt for a removed key that came back")

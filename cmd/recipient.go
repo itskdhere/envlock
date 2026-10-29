@@ -130,17 +130,17 @@ func uniqueRecipients(envelope *vault.VaultEnvelope) ([]string, error) {
 	return keys, nil
 }
 
-func confirmNewRecipients(lockFile string, keys []string, force bool) error {
+func unknownRecipients(lockFile string, keys []string) ([]string, error) {
 	file := knownRecipientsFile(lockFile)
 	if file == "" {
-		return nil
+		return nil, nil
 	}
 	data, err := os.ReadFile(file)
 	if errors.Is(err, fs.ErrNotExist) {
-		return nil
+		return nil, nil
 	}
 	if err != nil {
-		return fmt.Errorf("failed to read the recipients you last encrypted %s for: %w", lockFile, err)
+		return nil, fmt.Errorf("failed to read the recipients you last encrypted %s for: %w", lockFile, err)
 	}
 
 	known := strings.Fields(string(data))
@@ -150,10 +150,19 @@ func confirmNewRecipients(lockFile string, keys []string, force bool) error {
 			unknown = append(unknown, k)
 		}
 	}
-	if len(unknown) == 0 {
-		return nil
+	return unknown, nil
+}
+
+func unknownRecipientsWarning(lockFile string, unknown []string) string {
+	return ui.Warning("%s is also encrypted for key(s) you haven't encrypted it for before:\n  %s", lockFile, strings.Join(unknown, "\n  "))
+}
+
+func confirmNewRecipients(lockFile string, keys []string, force bool) error {
+	unknown, err := unknownRecipients(lockFile, keys)
+	if err != nil || len(unknown) == 0 {
+		return err
 	}
-	fmt.Println(ui.Warning("%s is also encrypted for key(s) you haven't encrypted it for before:\n  %s", lockFile, strings.Join(unknown, "\n  ")))
+	fmt.Println(unknownRecipientsWarning(lockFile, unknown))
 	if !force && !confirm("Encrypt for them too?") {
 		return errors.New("aborted: check these keys with your team, then rerun with --force / -y")
 	}

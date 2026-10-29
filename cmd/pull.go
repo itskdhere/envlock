@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/itskdhere/envlock/pkg/crypto"
 	"github.com/itskdhere/envlock/pkg/env"
@@ -63,7 +64,16 @@ func decryptVault(lockFile string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return openVault(envelope, lockFile, privKey)
+	plaintext, err := openVault(envelope, lockFile, privKey)
+	if err != nil {
+		return nil, err
+	}
+	if keys, err := uniqueRecipients(envelope); err == nil {
+		if unknown, _ := unknownRecipients(lockFile, keys); len(unknown) > 0 {
+			fmt.Fprintln(os.Stderr, unknownRecipientsWarning(lockFile, unknown))
+		}
+	}
+	return plaintext, nil
 }
 
 func openVault(envelope *vault.VaultEnvelope, lockFile string, privKey *ecdh.PrivateKey) ([]byte, error) {

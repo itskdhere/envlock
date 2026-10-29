@@ -114,7 +114,7 @@ el recipient rm el_pub_...       # revoke a teammate
 
 `env.lock` isn't signed. Anyone with write access to the repo, including a removed teammate, can commit a new `env.lock` that also encrypts for their own key. `push`, `add`, and `rm` remember which keys you last encrypted each `env.lock` for and ask before encrypting for any others (`-y` / `--force` skips the question), so check unexpected keys with your team. The first run on a machine trusts whatever `env.lock` lists, so also review the `recipients` list whenever `env.lock` changes in a pull request.
 
-Each `push`, `add`, and `rm` rewrites the whole file, so changes to `env.lock` on two branches can't be merged: Git makes you keep one side, and keeping the side without an `rm` restores the removed key. The machine that ran `rm` asks before encrypting for that key again, but pull the latest `env.lock` before running these commands. `rm` also asks before removing your own key.
+Each `push`, `add`, and `rm` rewrites the whole file, so changes to `env.lock` on two branches can't be merged: Git makes you keep one side, and keeping the side without an `rm` restores the removed key. `pull` and `run` warn about the restored key on any machine that has encrypted this `env.lock` before, and `push`, `add`, and `rm` ask before encrypting for it again, but pull the latest `env.lock` before running these commands. `rm` also asks before removing your own key.
 
 ## ⚙️ CI/CD (Zero-Disk)
 
