@@ -24,12 +24,17 @@ type VaultEnvelope struct {
 	Recipients []RecipientEntry `json:"recipients"`
 }
 
-// PayloadAAD binds the recipient list to the payload, so editing the list breaks decryption.
-func (v *VaultEnvelope) PayloadAAD() []byte {
+// PubKeys is unauthenticated until the payload decrypts.
+func (v *VaultEnvelope) PubKeys() []string {
 	keys := make([]string, len(v.Recipients))
 	for i, r := range v.Recipients {
 		keys[i] = r.PubKey
 	}
-	aad, _ := json.Marshal(keys)
+	return keys
+}
+
+// PayloadAAD binds the recipient list to the payload, so editing the list breaks decryption.
+func (v *VaultEnvelope) PayloadAAD() []byte {
+	aad, _ := json.Marshal(v.PubKeys())
 	return aad
 }

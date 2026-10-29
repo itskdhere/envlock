@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -227,6 +228,64 @@ func TestFirstPushEncryptsForOwnKey(t *testing.T) {
 	}
 }
 
+func TestRecipientAddRemove(t *testing.T) {
+	tempDir := inTempProject(t)
+
+	owner, _, _ := crypto.GenerateKeyPair()
+	mate, matePub, _ := crypto.GenerateKeyPair()
+	ownerKey, mateKey := crypto.FormatPrivateKey(owner), crypto.FormatPrivateKey(mate)
+	matePubStr := crypto.FormatPublicKey(matePub)
+	plaintext := []byte("FOO=bar\n")
+
+	t.Setenv("ENVLOCK_KEY", ownerKey)
+	_ = env.WriteEnvFile(filepath.Join(tempDir, ".env"), plaintext)
+	if err := pushCmd.RunE(pushCmd, nil); err != nil {
+		t.Fatalf("push failed: %v", err)
+	}
+
+	if err := recipientAddCmd.RunE(recipientAddCmd, []string{"el_pub_nothex"}); err == nil {
+		t.Fatal("add must reject a malformed public key")
+	}
+	if err := recipientAddCmd.RunE(recipientAddCmd, []string{matePubStr}); err != nil {
+		t.Fatalf("add failed: %v", err)
+	}
+	if err := recipientAddCmd.RunE(recipientAddCmd, []string{matePubStr}); err == nil {
+		t.Fatal("add must reject an existing recipient")
+	}
+
+	t.Setenv("ENVLOCK_KEY", mateKey)
+	if got, err := decryptVault("env.lock"); err != nil || !bytes.Equal(got, plaintext) {
+		t.Fatalf("added recipient must decrypt the vault: %q, %v", got, err)
+	}
+	before, _ := vault.ReadVault("env.lock")
+	ownerEph, _ := crypto.ParsePublicKey(before.Recipients[0].EphemeralPubKey)
+	ownerDEK, err := crypto.UnwrapDEK(before.Recipients[0].WrappedDEK, ownerEph, owner)
+	if err != nil {
+		t.Fatalf("owner's DEK must unwrap before removal: %v", err)
+	}
+
+	if err := recipientRemoveCmd.RunE(recipientRemoveCmd, []string{crypto.FormatPublicKey(owner.PublicKey())}); err != nil {
+		t.Fatalf("any recipient must be able to remove another: %v", err)
+	}
+	if err := recipientRemoveCmd.RunE(recipientRemoveCmd, []string{matePubStr}); err == nil {
+		t.Fatal("remove must refuse to drop the last recipient")
+	}
+	after, _ := vault.ReadVault("env.lock")
+	iv, _ := hex.DecodeString(after.IV)
+	ct, _ := hex.DecodeString(after.Ciphertext)
+	if _, err := crypto.DecryptPayload(ct, iv, ownerDEK, after.PayloadAAD()); err == nil {
+		t.Fatal("remove must re-encrypt under a fresh DEK the removed key never saw")
+	}
+
+	t.Setenv("ENVLOCK_KEY", ownerKey)
+	if err := pullCmd.RunE(pullCmd, nil); err == nil {
+		t.Fatal("removed recipient must not decrypt the vault")
+	}
+	if err := recipientAddCmd.RunE(recipientAddCmd, []string{crypto.FormatPublicKey(owner.PublicKey())}); err == nil {
+		t.Fatal("a non-recipient must not be able to add keys")
+	}
+}
+
 func TestExistingVaultIsNotClobbered(t *testing.T) {
 	tempDir := inTempProject(t)
 
@@ -379,6 +438,8 @@ func TestCommandFlagMerging(t *testing.T) {
 		{"push", "--help"},
 		{"init", "--help"},
 		{"run", "--help"},
+		{"recipient", "--help"},
+		{"recipient", "add", "--help"},
 		{"version"},
 	}
 

@@ -100,6 +100,18 @@ Decrypts `env.lock` in memory and runs the command with its variables in the env
 
 `$VAR` and `${VAR}` in unquoted and double-quoted values expand from earlier keys, then the host environment (unknown references are left as-is). Use single quotes, or `\$` inside double quotes, to keep a literal `$`.
 
+## 👥 Team Access
+
+Each teammate runs `envlock keygen` and shares their `el_pub_...` key. Anyone who can already decrypt `env.lock` can manage who else can:
+
+```bash
+el recipient ls                  # list the public keys env.lock is encrypted for
+el recipient add el_pub_...      # authorize a teammate
+el recipient rm el_pub_...       # revoke a teammate
+```
+
+`add` and `rm` decrypt `env.lock` with your key and re-encrypt it under a fresh key for the new recipient list, then you commit the result. A removed key can't decrypt the new `env.lock`, but it can still decrypt older versions in Git history and has already seen the secrets, so rotate them after revoking access.
+
 ## ⚙️ CI/CD (Zero-Disk)
 
 Store your private key as a CI secret and expose it as `ENVLOCK_KEY`:
@@ -139,6 +151,7 @@ el pull -e prod
 | `envlock push`    | `el push`, `enc` | Encrypts raw `.env` bytes into `env.lock` for all authorized recipients                   |
 | `envlock pull`    | `el pull`, `dec` | Decrypts `env.lock` with uncommitted changes warning/prompt (`-y` / `--force`)            |
 | `envlock run`     | `el run`         | Runs `-- <command>` with vault variables injected in memory (`--no-override`)             |
+| `envlock recipient` | `el recipient` | Lists (`ls`), adds (`add <pubkey>`), or removes (`rm <pubkey>`) authorized public keys    |
 | `envlock version` | `el version`     | Prints semantic version, commit hash, and target architecture                             |
 
 ## 🔒 Security & Verification
