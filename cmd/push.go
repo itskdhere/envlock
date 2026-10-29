@@ -14,6 +14,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var flagPushForce bool
+
 var pushCmd = &cobra.Command{
 	Use:     "push",
 	Aliases: []string{"enc", "encrypt"},
@@ -36,12 +38,17 @@ decrypt, or encrypts for your own key on the initial push.`,
 		}
 		defer crypto.WipeBytes(rawEnv)
 
+		privKey, err := loadPrivateKey()
+		if err != nil {
+			return err
+		}
+
 		var recipientPubKeys []string
 		existingVault, err := vault.ReadVault(paths.LockFile)
 		switch {
 		case err == nil:
-			// Decrypting authenticates the recipient list, so hand-added recipients are rejected here.
-			decrypted, err := openVault(existingVault, paths.LockFile)
+			// Decrypting rejects a hand-edited recipient list, not a whole vault forged for extra keys.
+			decrypted, err := openVault(existingVault, paths.LockFile, privKey)
 			if err != nil {
 				return fmt.Errorf("refusing to overwrite %s: %w", paths.LockFile, err)
 			}
@@ -51,11 +58,10 @@ decrypt, or encrypts for your own key on the initial push.`,
 			if err != nil {
 				return err
 			}
-		case errors.Is(err, fs.ErrNotExist):
-			privKey, err := loadPrivateKey()
-			if err != nil {
+			if err := confirmNewRecipients(paths.LockFile, recipientPubKeys, flagPushForce); err != nil {
 				return err
 			}
+		case errors.Is(err, fs.ErrNotExist):
 			recipientPubKeys = []string{crypto.FormatPublicKey(privKey.PublicKey())}
 		default:
 			return fmt.Errorf("refusing to overwrite %s: %w", paths.LockFile, err)
@@ -111,9 +117,13 @@ func sealVault(lockFile string, plaintext []byte, pubKeys []string) error {
 	if err := vault.WriteVault(lockFile, envelope); err != nil {
 		return fmt.Errorf("failed to write vault file %s: %w", lockFile, err)
 	}
+	if err := rememberRecipients(lockFile, pubKeys); err != nil {
+		fmt.Println(ui.Warning("Failed to record the recipients of %s, so keys added elsewhere won't be flagged: %v", lockFile, err))
+	}
 	return nil
 }
 
 func init() {
+	pushCmd.Flags().BoolVarP(&flagPushForce, "force", "y", false, "Encrypt for recipients you haven't encrypted for before without asking")
 	rootCmd.AddCommand(pushCmd)
 }

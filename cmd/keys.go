@@ -98,6 +98,13 @@ func readLine(r io.Reader) (string, error) {
 	}
 }
 
+func confirm(question string) bool {
+	fmt.Print(question + " [y/N]: ")
+	answer, _ := readLine(os.Stdin)
+	answer = strings.ToLower(strings.TrimSpace(answer))
+	return answer == "y" || answer == "yes"
+}
+
 func loadPrivateKey() (*ecdh.PrivateKey, error) {
 	keyStr, err := ResolvePrivateKey(flagKeyFile)
 	if err != nil {

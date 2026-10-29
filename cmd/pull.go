@@ -1,13 +1,12 @@
 package cmd
 
 import (
-	"bufio"
 	"bytes"
+	"crypto/ecdh"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/itskdhere/envlock/pkg/crypto"
 	"github.com/itskdhere/envlock/pkg/env"
@@ -43,18 +42,10 @@ before overwriting unless --force / -y is supplied.`,
 
 		if existing, err := env.ReadEnvFile(paths.EnvFile); err == nil {
 			defer crypto.WipeBytes(existing)
-			if !bytes.Equal(existing, decrypted) {
-				if !flagPullForce {
-					fmt.Println(ui.Warning("Local %s has changes differing from %s", paths.EnvFile, paths.LockFile))
-					fmt.Print("Overwrite local .env? [y/N]: ")
-
-					reader := bufio.NewReader(os.Stdin)
-					input, _ := reader.ReadString('\n')
-					input = strings.TrimSpace(strings.ToLower(input))
-
-					if input != "y" && input != "yes" {
-						return errors.New("pull aborted: local changes preserved")
-					}
+			if !bytes.Equal(existing, decrypted) && !flagPullForce {
+				fmt.Println(ui.Warning("Local %s has changes differing from %s", paths.EnvFile, paths.LockFile))
+				if !confirm("Overwrite local .env?") {
+					return errors.New("pull aborted: local changes preserved")
 				}
 			}
 		}
@@ -74,15 +65,14 @@ func decryptVault(lockFile string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read vault %s: %w", lockFile, err)
 	}
-	return openVault(envelope, lockFile)
-}
-
-func openVault(envelope *vault.VaultEnvelope, lockFile string) ([]byte, error) {
 	privKey, err := loadPrivateKey()
 	if err != nil {
 		return nil, err
 	}
+	return openVault(envelope, lockFile, privKey)
+}
 
+func openVault(envelope *vault.VaultEnvelope, lockFile string, privKey *ecdh.PrivateKey) ([]byte, error) {
 	callerPubKeyStr := crypto.FormatPublicKey(privKey.PublicKey())
 
 	var matched *vault.RecipientEntry

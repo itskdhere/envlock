@@ -112,6 +112,10 @@ el recipient rm el_pub_...       # revoke a teammate
 
 `add` and `rm` decrypt `env.lock` with your key and re-encrypt it under a fresh key for the new recipient list, then you commit the result. A removed key can't decrypt the new `env.lock`, but it can still decrypt older versions in Git history and has already seen the secrets, so rotate them after revoking access.
 
+`env.lock` isn't signed. Anyone with write access to the repo, including a removed teammate, can commit a new `env.lock` that also encrypts for their own key. `push`, `add`, and `rm` remember which keys you last encrypted each `env.lock` for and ask before encrypting for any others (`-y` / `--force` skips the question), so check unexpected keys with your team. The first run on a machine trusts whatever `env.lock` lists, so also review the `recipients` list whenever `env.lock` changes in a pull request.
+
+Each `push`, `add`, and `rm` rewrites the whole file, so changes to `env.lock` on two branches can't be merged: Git makes you keep one side, and keeping the side without an `rm` restores the removed key. The machine that ran `rm` asks before encrypting for that key again, but pull the latest `env.lock` before running these commands. `rm` also asks before removing your own key.
+
 ## ⚙️ CI/CD (Zero-Disk)
 
 Store your private key as a CI secret and expose it as `ENVLOCK_KEY`:

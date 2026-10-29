@@ -1,10 +1,16 @@
 package cmd
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
+	"path/filepath"
+	"runtime"
 	"slices"
+	"strings"
 
 	"github.com/itskdhere/envlock/pkg/crypto"
 	"github.com/itskdhere/envlock/pkg/env"
@@ -12,6 +18,8 @@ import (
 	"github.com/itskdhere/envlock/pkg/vault"
 	"github.com/spf13/cobra"
 )
+
+var flagRecipientForce bool
 
 var recipientCmd = &cobra.Command{
 	Use:     "recipient",
@@ -60,7 +68,7 @@ for the existing recipients plus <pubkey> (an el_pub_... key from 'envlock keyge
 		if err != nil {
 			return err
 		}
-		_, err = editRecipients(func(keys []string) ([]string, error) {
+		_, err = editRecipients(func(keys []string, _ string) ([]string, error) {
 			if slices.Contains(keys, key) {
 				return nil, fmt.Errorf("%s is already a recipient", key)
 			}
@@ -84,13 +92,16 @@ had the plaintext, so rotate the secrets it could read.`,
 		if err != nil {
 			return err
 		}
-		lockFile, err := editRecipients(func(keys []string) ([]string, error) {
+		lockFile, err := editRecipients(func(keys []string, self string) ([]string, error) {
 			i := slices.Index(keys, key)
 			if i < 0 {
 				return nil, fmt.Errorf("%s is not a recipient", key)
 			}
 			if len(keys) == 1 {
 				return nil, errors.New("refusing to remove the last recipient: nobody could decrypt the vault")
+			}
+			if key == self && !flagRecipientForce && !confirm("Remove your own key? You won't be able to decrypt the vault anymore") {
+				return nil, errors.New("aborted: your key was not removed")
 			}
 			return slices.Delete(keys, i, i+1), nil
 		})
@@ -124,7 +135,61 @@ func uniqueRecipients(envelope *vault.VaultEnvelope) ([]string, error) {
 	return keys, nil
 }
 
-func editRecipients(edit func(keys []string) ([]string, error)) (lockFile string, err error) {
+func confirmNewRecipients(lockFile string, keys []string, force bool) error {
+	file := knownRecipientsFile(lockFile)
+	if file == "" {
+		return nil
+	}
+	data, err := os.ReadFile(file)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("failed to read the recipients you last encrypted %s for: %w", lockFile, err)
+	}
+
+	known := strings.Fields(string(data))
+	var unknown []string
+	for _, k := range keys {
+		if !slices.Contains(known, k) {
+			unknown = append(unknown, k)
+		}
+	}
+	if len(unknown) == 0 {
+		return nil
+	}
+	fmt.Println(ui.Warning("%s is also encrypted for key(s) you haven't encrypted it for before:\n  %s", lockFile, strings.Join(unknown, "\n  ")))
+	if !force && !confirm("Encrypt for them too?") {
+		return errors.New("aborted: check these keys with your team, then rerun with --force / -y")
+	}
+	return nil
+}
+
+func rememberRecipients(lockFile string, keys []string) error {
+	file := knownRecipientsFile(lockFile)
+	if file == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(file), 0700); err != nil {
+		return err
+	}
+	return os.WriteFile(file, []byte(strings.Join(keys, "\n")+"\n"), 0600)
+}
+
+func knownRecipientsFile(lockFile string) string {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return ""
+	}
+	// Terminals disagree on drive letter case.
+	if runtime.GOOS == "windows" {
+		lockFile = strings.ToLower(lockFile)
+	}
+	sum := sha256.Sum256([]byte(lockFile))
+	return filepath.Join(dir, "envlock", "known", hex.EncodeToString(sum[:]))
+}
+
+func editRecipients(edit func(keys []string, self string) ([]string, error)) (lockFile string, err error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return "", fmt.Errorf("failed to get current working directory: %w", err)
@@ -135,7 +200,11 @@ func editRecipients(edit func(keys []string) ([]string, error)) (lockFile string
 	if err != nil {
 		return "", fmt.Errorf("failed to read vault %s: %w", lockFile, err)
 	}
-	plaintext, err := openVault(envelope, lockFile)
+	privKey, err := loadPrivateKey()
+	if err != nil {
+		return "", err
+	}
+	plaintext, err := openVault(envelope, lockFile, privKey)
 	if err != nil {
 		return "", err
 	}
@@ -145,7 +214,10 @@ func editRecipients(edit func(keys []string) ([]string, error)) (lockFile string
 	if err != nil {
 		return "", err
 	}
-	keys, err = edit(keys)
+	if err := confirmNewRecipients(lockFile, keys, flagRecipientForce); err != nil {
+		return "", err
+	}
+	keys, err = edit(keys, crypto.FormatPublicKey(privKey.PublicKey()))
 	if err != nil {
 		return "", err
 	}
@@ -158,6 +230,9 @@ func editRecipients(edit func(keys []string) ([]string, error)) (lockFile string
 }
 
 func init() {
+	for _, c := range []*cobra.Command{recipientAddCmd, recipientRemoveCmd} {
+		c.Flags().BoolVarP(&flagRecipientForce, "force", "y", false, "Skip confirmations for unfamiliar recipients and removing your own key")
+	}
 	recipientCmd.AddCommand(recipientListCmd, recipientAddCmd, recipientRemoveCmd)
 	rootCmd.AddCommand(recipientCmd)
 }

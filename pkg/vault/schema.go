@@ -24,7 +24,7 @@ type VaultEnvelope struct {
 	Recipients []RecipientEntry `json:"recipients"`
 }
 
-// PubKeys is unauthenticated until the payload decrypts.
+// PubKeys is untrusted: anyone can write a vault that decrypts for any list of keys.
 func (v *VaultEnvelope) PubKeys() []string {
 	keys := make([]string, len(v.Recipients))
 	for i, r := range v.Recipients {

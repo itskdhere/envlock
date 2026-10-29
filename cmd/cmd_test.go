@@ -30,17 +30,35 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-// inTempProject runs the test in a fresh directory with default flags and no key in the environment.
+// inTempProject isolates cwd, config dir, flags, key env vars, and stdin.
 func inTempProject(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
 	t.Chdir(dir)
 	t.Setenv("ENVLOCK_KEY", "")
 	t.Setenv("ENVLOCK_KEY_PATH", "")
+	config := t.TempDir()
+	for _, v := range []string{"APPDATA", "XDG_CONFIG_HOME", "HOME"} {
+		t.Setenv(v, config)
+	}
+	withStdin(t, "")
 	flagEnv, flagFile, flagKeyFile = "", "", ""
 	flagKeygenGlobal, flagKeygenOut, flagKeygenStdout, flagKeygenForce = false, "", false, false
-	flagPullForce, flagRunNoOverride = false, false
+	flagPullForce, flagRunNoOverride, flagPushForce, flagRecipientForce = false, false, false, false
 	return dir
+}
+
+func withStdin(t *testing.T, input string) {
+	t.Helper()
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("pipe failed: %v", err)
+	}
+	fmt.Fprint(w, input)
+	w.Close()
+	stdin := os.Stdin
+	os.Stdin = r
+	t.Cleanup(func() { os.Stdin = stdin; r.Close() })
 }
 
 func TestEndToEndFidelity(t *testing.T) {
@@ -315,6 +333,67 @@ func TestRemoveDropsEveryCopyOfAKey(t *testing.T) {
 	rootCmd.SetArgs([]string{"recipient", "remvoe", malPubStr})
 	if err := rootCmd.Execute(); err == nil {
 		t.Fatal("a mistyped recipient subcommand must fail")
+	}
+}
+
+func TestPushFlagsARestoredRecipient(t *testing.T) {
+	tempDir := inTempProject(t)
+
+	owner, _, _ := crypto.GenerateKeyPair()
+	_, matePub, _ := crypto.GenerateKeyPair()
+	matePubStr := crypto.FormatPublicKey(matePub)
+	t.Setenv("ENVLOCK_KEY", crypto.FormatPrivateKey(owner))
+	_ = env.WriteEnvFile(filepath.Join(tempDir, ".env"), []byte("FOO=bar\n"))
+	if err := pushCmd.RunE(pushCmd, nil); err != nil {
+		t.Fatalf("push failed: %v", err)
+	}
+	if err := recipientAddCmd.RunE(recipientAddCmd, []string{matePubStr}); err != nil {
+		t.Fatalf("add failed: %v", err)
+	}
+	withMate, _ := os.ReadFile("env.lock")
+	if err := recipientRemoveCmd.RunE(recipientRemoveCmd, []string{matePubStr}); err != nil {
+		t.Fatalf("remove failed: %v", err)
+	}
+
+	_ = os.WriteFile("env.lock", withMate, 0644)
+	withStdin(t, "n\n")
+	if err := pushCmd.RunE(pushCmd, nil); err == nil {
+		t.Fatal("push must not silently re-encrypt for a removed key that came back")
+	}
+	_, newPub, _ := crypto.GenerateKeyPair()
+	if err := recipientAddCmd.RunE(recipientAddCmd, []string{crypto.FormatPublicKey(newPub)}); err == nil {
+		t.Fatal("add must not silently keep a removed key that came back")
+	}
+	withStdin(t, "y\n")
+	if err := pushCmd.RunE(pushCmd, nil); err != nil {
+		t.Fatalf("push must continue once the key is confirmed: %v", err)
+	}
+	if err := pushCmd.RunE(pushCmd, nil); err != nil {
+		t.Fatalf("a confirmed key must not be flagged again: %v", err)
+	}
+}
+
+func TestRemovingYourOwnKeyAsks(t *testing.T) {
+	inTempProject(t)
+
+	owner, _, _ := crypto.GenerateKeyPair()
+	_, matePub, _ := crypto.GenerateKeyPair()
+	ownerPubStr := crypto.FormatPublicKey(owner.PublicKey())
+	if err := sealVault("env.lock", []byte("FOO=bar\n"), []string{ownerPubStr, crypto.FormatPublicKey(matePub)}); err != nil {
+		t.Fatalf("seal failed: %v", err)
+	}
+
+	t.Setenv("ENVLOCK_KEY", crypto.FormatPrivateKey(owner))
+	withStdin(t, "n\n")
+	if err := recipientRemoveCmd.RunE(recipientRemoveCmd, []string{ownerPubStr}); err == nil {
+		t.Fatal("removing your own key must ask first")
+	}
+	flagRecipientForce = true
+	if err := recipientRemoveCmd.RunE(recipientRemoveCmd, []string{ownerPubStr}); err != nil {
+		t.Fatalf("--force must skip the question: %v", err)
+	}
+	if _, err := decryptVault("env.lock"); err == nil {
+		t.Fatal("your key must be gone after confirming")
 	}
 }
 
