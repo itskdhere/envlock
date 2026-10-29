@@ -395,7 +395,7 @@ func TestKeyFromStdinLeavesRestUnread(t *testing.T) {
 	t.Cleanup(func() { os.Stdin = stdin })
 
 	priv, _, _ := crypto.GenerateKeyPair()
-	fmt.Fprintf(w, "%s\ny\n", crypto.FormatPrivateKey(priv))
+	fmt.Fprintf(w, "\xef\xbb\xbf%s\ny\n", crypto.FormatPrivateKey(priv))
 	w.Close()
 
 	if key, err := ResolvePrivateKey("-"); err != nil || key != crypto.FormatPrivateKey(priv) {

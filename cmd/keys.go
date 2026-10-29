@@ -77,6 +77,7 @@ func ResolvePrivateKey(keyFileFlag string) (string, error) {
 }
 
 // readLine reads a byte at a time so the rest of stdin stays unread for the command or a prompt.
+// Windows PowerShell 5.1 prefixes piped input with a UTF-8 BOM.
 func readLine(r io.Reader) (string, error) {
 	var line []byte
 	b := make([]byte, 1)
@@ -84,12 +85,12 @@ func readLine(r io.Reader) (string, error) {
 		n, err := r.Read(b)
 		if n == 1 {
 			if b[0] == '\n' {
-				return string(line), nil
+				return strings.TrimPrefix(string(line), "\xef\xbb\xbf"), nil
 			}
 			line = append(line, b[0])
 		}
 		if err == io.EOF {
-			return string(line), nil
+			return strings.TrimPrefix(string(line), "\xef\xbb\xbf"), nil
 		}
 		if err != nil {
 			return "", err
