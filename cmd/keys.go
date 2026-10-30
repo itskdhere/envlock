@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/itskdhere/envlock/pkg/crypto"
+	"github.com/itskdhere/envlock/pkg/ui"
 	"github.com/mattn/go-isatty"
 )
 
@@ -100,7 +101,7 @@ func readLine(r io.Reader) (string, error) {
 }
 
 func confirm(question string) bool {
-	fmt.Print(question + " [y/N]: ")
+	fmt.Printf("%s %s ", ui.Bold(question), ui.Subtle("[y/N]:"))
 	answer, _ := readLine(os.Stdin)
 	// A piped answer isn't echoed, so the next output would join the prompt line.
 	if fd := os.Stdin.Fd(); !isatty.IsTerminal(fd) && !isatty.IsCygwinTerminal(fd) {

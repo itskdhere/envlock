@@ -82,14 +82,21 @@ The public key (el_pub_...) can be safely shared with teammates.`,
 			return fmt.Errorf("failed to write public key to %q: %w", pubPath, err)
 		}
 
+		copied := ui.CopyToClipboardOSC52(pubFormatted)
+
 		lines := []string{
-			fmt.Sprintf("• Private Key: %s  (owner-only, NEVER share or commit)", privPath),
-			fmt.Sprintf("• Public Key:  %s", pubPath),
+			fmt.Sprintf("🔒 %s %s  %s", ui.Bold("Private Key:"), privPath, ui.Subtle("(owner-only ACL, NEVER share or commit)")),
+			fmt.Sprintf("🌐 %s  %s", ui.Bold("Public Key:"), pubPath),
 			"",
-			"Public Identity Key:",
-			fmt.Sprintf("  %s", pubFormatted),
+			ui.Bold("Public Identity Key:"),
+			fmt.Sprintf("  %s", ui.Highlight(pubFormatted)),
 			"",
-			"Share this public key with your team to authorize vault access.",
+		}
+
+		if copied {
+			lines = append(lines, fmt.Sprintf("%s Public identity key copied to clipboard! Share it with your team.", ui.SuccessIcon.String()))
+		} else {
+			lines = append(lines, "Share this public key with your team to authorize vault access.")
 		}
 
 		fmt.Println(ui.Banner("Keypair Generated Successfully", lines))

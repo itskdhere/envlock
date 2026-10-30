@@ -65,7 +65,13 @@ decrypt, or encrypts for your own key on the initial push.`,
 			return err
 		}
 
-		fmt.Println(ui.Success("Encrypted %s -> %s (%d recipient(s))", paths.EnvFile, paths.LockFile, len(recipientPubKeys)))
+		parsedVars, _ := env.Parse(rawEnv)
+		if len(parsedVars) > 0 {
+			fmt.Println(ui.Success("Encrypted %d variable(s) from %s -> %s (%d recipient(s))", len(parsedVars), paths.EnvFile, paths.LockFile, len(recipientPubKeys)))
+		} else {
+			fmt.Println(ui.Success("Encrypted %s -> %s (%d recipient(s))", paths.EnvFile, paths.LockFile, len(recipientPubKeys)))
+		}
+		fmt.Println(ui.Subtle("  Commit to Git: git add " + paths.LockFile))
 		return nil
 	},
 }

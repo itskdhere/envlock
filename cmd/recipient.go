@@ -16,6 +16,7 @@ import (
 	"github.com/itskdhere/envlock/pkg/env"
 	"github.com/itskdhere/envlock/pkg/ui"
 	"github.com/itskdhere/envlock/pkg/vault"
+	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 )
 
@@ -45,8 +46,28 @@ No private key is needed. A hand-edited list is only caught when the vault is de
 		if err != nil {
 			return fmt.Errorf("failed to read vault %s: %w", lockFile, err)
 		}
-		for _, key := range envelope.PubKeys() {
-			fmt.Println(key)
+		pubKeys := envelope.PubKeys()
+
+		// If stdout is redirected or non-terminal, output raw keys for machine-friendliness
+		if !isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd()) {
+			for _, key := range pubKeys {
+				fmt.Println(key)
+			}
+			return nil
+		}
+
+		callerPubStr := ""
+		if privKey, err := loadPrivateKey(); err == nil {
+			callerPubStr = crypto.FormatPublicKey(privKey.PublicKey())
+		}
+
+		fmt.Printf("Authorized recipients for %s (%d total):\n", ui.Bold(lockFile), len(pubKeys))
+		for _, key := range pubKeys {
+			if key == callerPubStr {
+				fmt.Printf("  • %s %s\n", key, ui.Highlight("(you)"))
+			} else {
+				fmt.Printf("  • %s\n", key)
+			}
 		}
 		return nil
 	},
@@ -63,12 +84,15 @@ for the existing recipients plus <pubkey> (an el_pub_... key from 'envlock keyge
 		if err != nil {
 			return err
 		}
-		_, err = editRecipients(func(keys []string, _ string) ([]string, error) {
+		lockFile, err := editRecipients(func(keys []string, _ string) ([]string, error) {
 			if slices.Contains(keys, key) {
 				return nil, fmt.Errorf("%s is already a recipient", key)
 			}
 			return append(keys, key), nil
 		})
+		if err == nil {
+			fmt.Println(ui.Subtle("  Commit to Git: git add " + lockFile))
+		}
 		return err
 	},
 }
@@ -104,6 +128,7 @@ had the plaintext, so rotate the secrets it could read.`,
 			return err
 		}
 		fmt.Println(ui.Warning("%s can still decrypt older %s versions in Git history. Rotate the secrets it could read", key, lockFile))
+		fmt.Println(ui.Subtle("  Commit to Git: git add " + lockFile))
 		return nil
 	},
 }

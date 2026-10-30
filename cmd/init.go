@@ -42,33 +42,33 @@ var initCmd = &cobra.Command{
 		var lines []string
 		switch {
 		case hasVault:
-			lines = append(lines, fmt.Sprintf("• Existing vault found, no template env file created: %s", paths.LockFile))
+			lines = append(lines, fmt.Sprintf("%s Existing vault found, no template env file created: %s", ui.InfoIcon.String(), paths.LockFile))
 		case createdEnv:
-			lines = append(lines, fmt.Sprintf("+ Created template env file: %s", paths.EnvFile))
+			lines = append(lines, fmt.Sprintf("%s Created template env file: %s", ui.SuccessIcon.String(), paths.EnvFile))
 		default:
-			lines = append(lines, fmt.Sprintf("• Existing env file preserved: %s", paths.EnvFile))
+			lines = append(lines, fmt.Sprintf("%s Existing env file preserved: %s", ui.InfoIcon.String(), paths.EnvFile))
 		}
 
 		if len(addedGitignore) > 0 {
-			lines = append(lines, fmt.Sprintf("+ Updated .gitignore with %d safety rules", len(addedGitignore)))
+			lines = append(lines, fmt.Sprintf("%s Updated .gitignore with %d safety rules", ui.SuccessIcon.String(), len(addedGitignore)))
 		} else {
-			lines = append(lines, "• .gitignore safety rules already present")
+			lines = append(lines, fmt.Sprintf("%s .gitignore safety rules already present", ui.InfoIcon.String()))
 		}
 
 		if len(addedGitattributes) > 0 {
-			lines = append(lines, "+ Updated .gitattributes with binary merge rules")
+			lines = append(lines, fmt.Sprintf("%s Updated .gitattributes with binary merge rules", ui.SuccessIcon.String()))
 		} else {
-			lines = append(lines, "• .gitattributes binary merge rules already present")
+			lines = append(lines, fmt.Sprintf("%s .gitattributes binary merge rules already present", ui.InfoIcon.String()))
 		}
 
 		lines = append(lines, "")
-		lines = append(lines, "Next steps:")
+		lines = append(lines, ui.Bold("Next steps:"))
 		if hasVault {
-			lines = append(lines, "  1. Decrypt your secrets:  envlock pull")
-			lines = append(lines, "     No access yet? Run 'envlock keygen' and ask a teammate to run 'envlock recipient add' with your envlock.pub key")
+			lines = append(lines, fmt.Sprintf("  1. Decrypt your secrets:  %s", ui.Highlight("envlock pull")))
+			lines = append(lines, fmt.Sprintf("     No access yet? Run '%s' and ask a teammate to run '%s'", ui.Highlight("envlock keygen"), ui.Highlight("envlock recipient add <key>")))
 		} else {
-			lines = append(lines, "  1. Generate your identity key:  envlock keygen")
-			lines = append(lines, "  2. Encrypt your secrets:        envlock push")
+			lines = append(lines, fmt.Sprintf("  1. Generate your identity key:  %s", ui.Highlight("envlock keygen")))
+			lines = append(lines, fmt.Sprintf("  2. Encrypt your secrets:        %s", ui.Highlight("envlock push")))
 		}
 
 		banner := ui.Banner("EnvLock Initialized", lines)
