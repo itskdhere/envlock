@@ -43,7 +43,7 @@ go install github.com/itskdhere/envlock@latest
 > - **macOS / Linux:** [`https://envlock.itskdhere.com/install.sh`](https://envlock.itskdhere.com/install.sh) (alias: `/sh`)
 > - **Windows:** [`https://envlock.itskdhere.com/install.ps1`](https://envlock.itskdhere.com/install.ps1) (alias: `/ps1`)
 
-To install a specific release or change the install location, set `ENVLOCK_VERSION` (e.g. `v0.5.0`) or `ENVLOCK_INSTALL_DIR`. With the shell installer, put them right before `bash`: `curl -fsSL https://envlock.itskdhere.com | ENVLOCK_VERSION=v0.5.0 bash`.
+To install a specific release or change the install location, set `ENVLOCK_VERSION` (e.g. `v0.6.0`) or `ENVLOCK_INSTALL_DIR`. With the shell installer, put them right before `bash`: `curl -fsSL https://envlock.itskdhere.com | ENVLOCK_VERSION=v0.6.0 bash`.
 
 EnvLock checks GitHub for a new release at most every 6 hours and prints a one-line notice when one is out. That single HTTPS request to github.com is the only network call EnvLock makes. It is skipped in CI and when stderr isn't a terminal. Set `ENVLOCK_NO_UPDATE_CHECK=1` to turn it off.
 

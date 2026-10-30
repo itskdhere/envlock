@@ -53,7 +53,7 @@ if ($env:ENVLOCK_VERSION) {
     }
 
     if (-not $Tag) {
-        Write-Error 'Error: Could not determine the latest release. Set $env:ENVLOCK_VERSION (e.g. v0.5.0) to install a specific one.'
+        Write-Error 'Error: Could not determine the latest release. Set $env:ENVLOCK_VERSION (e.g. v0.6.0) to install a specific one.'
         return
     }
 }
