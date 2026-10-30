@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/itskdhere/envlock/pkg/crypto"
 	"github.com/itskdhere/envlock/pkg/env"
 	"github.com/itskdhere/envlock/pkg/ui"
@@ -39,6 +41,7 @@ before overwriting unless --force / -y is supplied.`,
 			defer crypto.WipeBytes(existing)
 			if !bytes.Equal(existing, decrypted) && !flagPullForce {
 				fmt.Println(ui.Warning("Local %s has changes differing from %s", paths.EnvFile, paths.LockFile))
+				printEnvDiffSummary(existing, decrypted)
 				if !confirm("Overwrite local .env?") {
 					return errors.New("pull aborted: local changes preserved")
 				}
@@ -52,6 +55,47 @@ before overwriting unless --force / -y is supplied.`,
 		fmt.Println(ui.Success("Decrypted %s -> %s (byte-for-byte fidelity preserved)", paths.LockFile, paths.EnvFile))
 		return nil
 	},
+}
+
+func printEnvDiffSummary(local, remote []byte) {
+	localVars, errLocal := env.Parse(local)
+	remoteVars, errRemote := env.Parse(remote)
+	if errLocal != nil || errRemote != nil {
+		return
+	}
+
+	var added, removed, modified []string
+	for k, vLocal := range localVars {
+		if vRemote, ok := remoteVars[k]; !ok {
+			added = append(added, k)
+		} else if vLocal != vRemote {
+			modified = append(modified, k)
+		}
+	}
+	for k := range remoteVars {
+		if _, ok := localVars[k]; !ok {
+			removed = append(removed, k)
+		}
+	}
+
+	slices.Sort(added)
+	slices.Sort(removed)
+	slices.Sort(modified)
+
+	if len(added) == 0 && len(removed) == 0 && len(modified) == 0 {
+		fmt.Println(ui.Subtle("  (Differences are in comments, whitespace, or formatting)"))
+		return
+	}
+
+	for _, k := range added {
+		fmt.Printf("  %s %s %s\n", lipgloss.NewStyle().Foreground(ui.SuccessColor).Render("+"), ui.Bold(k), ui.Subtle("(added locally)"))
+	}
+	for _, k := range modified {
+		fmt.Printf("  %s %s %s\n", lipgloss.NewStyle().Foreground(ui.WarningColor).Render("~"), ui.Bold(k), ui.Subtle("(modified locally)"))
+	}
+	for _, k := range removed {
+		fmt.Printf("  %s %s %s\n", lipgloss.NewStyle().Foreground(ui.ErrorColor).Render("-"), ui.Bold(k), ui.Subtle("(missing locally / in vault)"))
+	}
 }
 
 // decryptVault decrypts lockFile in memory; the caller must wipe the result.
