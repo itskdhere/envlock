@@ -65,7 +65,7 @@ envlock keygen
 # or: el keygen
 ```
 
-Creates `envlock.key` (readable only by you, on every OS) and `envlock.pub`. EnvLock warns if the key isn't gitignored.
+Creates `envlock.key` (readable only by you, on every OS) and `envlock.pub`. EnvLock warns if the key isn't gitignored. In terminals that support OSC 52, the public key is also copied to your clipboard.
 
 > **Tip:** Use `envlock keygen --global` (or `-g`) to store your keypair centrally in your user config directory (`~/.config/envlock/keys/` or `%APPDATA%\envlock\keys\`) across all projects.
 
@@ -87,7 +87,7 @@ envlock pull
 # or: el pull
 ```
 
-Restores the exact `.env` file byte-for-byte. If local unpushed changes exist, EnvLock warns you before overwriting (`--force` / `-y` to bypass).
+Restores the exact `.env` file byte-for-byte. If local unpushed changes exist, EnvLock lists which variables were added, modified, or removed locally and asks before overwriting (`--force` / `-y` to bypass).
 
 ### 5. Run commands with secrets injected in memory
 
@@ -109,6 +109,8 @@ el recipient ls                  # list the public keys env.lock is encrypted fo
 el recipient add el_pub_...      # authorize a teammate
 el recipient rm el_pub_...       # revoke a teammate
 ```
+
+In a terminal, `ls` marks your own key with `(you)`. When piped, it prints one bare key per line for scripts.
 
 `add` and `rm` decrypt `env.lock` with your key and re-encrypt it under a fresh key for the new recipient list, then you commit the result. A removed key can't decrypt the new `env.lock`, but it can still decrypt older versions in Git history and has already seen the secrets, so rotate them after revoking access.
 
@@ -166,6 +168,8 @@ el pull -e prod
 | `envlock run`       | `el run`              | Runs `-- <command>` with vault variables injected in memory (`--no-override`)             |
 | `envlock recipient` | `el recipient`, `rec` | Lists (`ls`), adds (`add <pubkey>`), or removes (`rm <pubkey>`) authorized public keys    |
 | `envlock version`   | `el version`          | Prints semantic version, commit hash, and target architecture                             |
+
+Shell completion (including `-e` environment names) is available via `envlock completion bash|zsh|fish|powershell`. Set `NO_COLOR=1` for plain, uncolored output.
 
 ## 🔒 Security & Verification
 

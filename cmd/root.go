@@ -24,9 +24,10 @@ var rootCmd = &cobra.Command{
 	Long: `EnvLock (el) keeps your .env files local and uncommitted while securely storing 
 tamper-evident, encrypted snapshots (env.lock) directly in your Git repository.
 Protected by Curve25519 (X25519 ECDH) asymmetric envelope encryption and AES-256-GCM.`,
+	// Execute prints errors itself; set here because PersistentPreRun is skipped on parse errors.
+	SilenceErrors: true,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		cmd.SilenceUsage = true
-		cmd.SilenceErrors = true
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if flagVersion {
@@ -209,7 +210,7 @@ func renderStyledHelp(cmd *cobra.Command) {
 
 		var otherCmds []*cobra.Command
 		for _, c := range cmd.Commands() {
-			if c.GroupID == "" && c.IsAvailableCommand() && c.Name() != "help" && c.Name() != "completion" {
+			if c.GroupID == "" && c.IsAvailableCommand() && c.Name() != "help" {
 				otherCmds = append(otherCmds, c)
 			}
 		}
@@ -223,7 +224,7 @@ func renderStyledHelp(cmd *cobra.Command) {
 	} else if cmd.HasAvailableSubCommands() {
 		fmt.Println(ui.Bold("AVAILABLE COMMANDS:"))
 		for _, c := range cmd.Commands() {
-			if c.IsAvailableCommand() && c.Name() != "help" && c.Name() != "completion" {
+			if c.IsAvailableCommand() && c.Name() != "help" {
 				fmt.Println(formatCommandListing(c, colWidth))
 			}
 		}
@@ -265,8 +266,6 @@ func renderStyledHelp(cmd *cobra.Command) {
 }
 
 func init() {
-	rootCmd.CompletionOptions.DisableDefaultCmd = true
-
 	rootCmd.PersistentFlags().StringVarP(&flagEnv, "env", "e", "", "Target environment name (e.g. 'prod' maps to .env.prod and env.prod.lock)")
 	rootCmd.PersistentFlags().StringVarP(&flagFile, "file", "f", "", "Explicit path to .env file")
 	rootCmd.PersistentFlags().StringVar(&flagKeyFile, "key-file", "", "Explicit path to private key file (or '-' for stdin)")

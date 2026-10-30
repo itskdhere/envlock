@@ -94,7 +94,7 @@ The public key (el_pub_...) can be safely shared with teammates.`,
 		}
 
 		if copied {
-			lines = append(lines, fmt.Sprintf("%s Public identity key copied to clipboard! Share it with your team.", ui.SuccessIcon.String()))
+			lines = append(lines, "Share this key with your team "+ui.Subtle("(copied to clipboard if supported)"))
 		} else {
 			lines = append(lines, "Share this public key with your team to authorize vault access.")
 		}
