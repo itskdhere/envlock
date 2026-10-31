@@ -51,8 +51,8 @@ func printUpdateNotice() {
 		if runtime.GOOS == "windows" {
 			update = "irm https://envlock.itskdhere.com | iex"
 		}
-		fmt.Fprintln(os.Stderr, ui.Warning("EnvLock v%s is available (you have v%s). Update with: %s",
-			strings.TrimPrefix(latest, "v"), strings.TrimPrefix(Version, "v"), update))
+		fmt.Fprintln(os.Stderr, ui.Warning("EnvLock v%s is available (you have v%s)\n  Update with: %s",
+			strings.TrimPrefix(latest, "v"), strings.TrimPrefix(Version, "v"), ui.Highlight(update)))
 	})
 }
 
@@ -68,7 +68,6 @@ func cachedLatestRelease() string {
 	}
 	latest, err := fetchLatestRelease()
 	if err != nil {
-		// Rewriting resets the mtime, so an offline machine doesn't retry on every run.
 		latest = string(cached)
 	}
 	_ = os.MkdirAll(filepath.Dir(file), 0755)
@@ -76,7 +75,6 @@ func cachedLatestRelease() string {
 	return latest
 }
 
-// The /releases/latest redirect has no rate limit, unlike the API.
 func fetchLatestRelease() (string, error) {
 	client := &http.Client{
 		Timeout:       2 * time.Second,
@@ -95,7 +93,6 @@ func fetchLatestRelease() (string, error) {
 	return tag, nil
 }
 
-// Strict X.Y.Z keeps dev builds from checking and untrusted text out of the terminal.
 func parseVersion(v string) ([]uint64, bool) {
 	parts := strings.Split(strings.TrimPrefix(v, "v"), ".")
 	if len(parts) != 3 {
